@@ -1,4 +1,4 @@
-import { PrismaClient } from "../generated/prisma";
+import { PrismaClient } from "../generated/prisma/client.js";
 import jwt from "jsonwebtoken";
 import { hashPassword, comparePassword } from "../utils/hash.js";
 import { customAlphabet } from "nanoid";

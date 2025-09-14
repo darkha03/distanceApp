@@ -9,21 +9,47 @@ import * as React from "react";
 import { Button, TouchableOpacity, View } from "react-native";
 
 export default function LoginScreen() {
+  const [username, setUsername] = React.useState("");
+  const [password, setPassword] = React.useState("");
   const { setToken } = useAuthStore();
   const router = useRouter();
   const handleLogin = async () => {
-    setToken("dummy-token");
-    await saveToken("dummy-token");
+    try {
+    const res = await fetch("http://localhost:4000/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password }),
+    });
+
+    if (!res.ok) {
+      throw new Error("Invalid credentials");
+    }
+
+    const data = await res.json();
+    setToken(data.token);
+    await saveToken(data.token);
     router.replace("/dashboard");
+  } catch (err) {
+    console.error("Login error:", err);
+    alert("Login failed. Please check your credentials.");
+  }
   }
 
   return (
     <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: Colors.light.background }}>
       <AppText style={{ fontSize: 24, fontWeight: "700", marginBottom: 24 }}>Login</AppText>
-      <AppInput placeholder="Username" style={{ width: 200, marginBottom: 12 }} />
+      <AppInput 
+        placeholder="Username" 
+        style={{ width: 200, marginBottom: 12 }}
+        value={username}
+        onChangeText={setUsername}
+      />
       <AppInput
-        placeholder="Password" style={{ width: 200, marginBottom: 12 }}
+        placeholder="Password" 
+        style={{ width: 200, marginBottom: 12 }}
         secureTextEntry
+        value={password}
+        onChangeText={setPassword}
       />
       <AppButton title="Login" onPress={() => {
           console.log("Logging in..."); 

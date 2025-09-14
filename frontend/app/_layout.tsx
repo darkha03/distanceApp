@@ -1,25 +1,48 @@
 import { Colors } from "@/constants/Colors";
 import { useColorScheme } from "@/hooks/useColorScheme.web";
 import { useAuthStore } from "@/store/authStore";
-import { getToken } from "@/utils/storage";
+import { getToken,removeToken } from "@/utils/storage";
 import { Stack } from "expo-router";
 import { useEffect, useState } from "react";
 
 export default function RootLayout() {
   const [isLoading, setIsLoading] = useState(true); // Replace with actual loading logic if needed
-  const { token, setToken } = useAuthStore();
+  const { token, setToken, clearToken } = useAuthStore();
   const colorScheme = useColorScheme();
   const bgColor = colorScheme === 'dark' ? Colors.dark.background : Colors.light.background;
-  useEffect(() => {
-    async function loadToken() {
-      const storedToken = await getToken();
-      if (storedToken) {
-        setToken(storedToken);
+useEffect(() => {
+  async function loadToken() {
+    const storedToken = await getToken();
+
+    if (storedToken) {
+      try {
+        const res = await fetch("http://localhost:4000/api/auth/verify", {
+          method: "GET",
+          headers: {
+            "Authorization": `Bearer ${storedToken}`,
+          },
+        });
+
+        if (res.ok) {
+          // ✅ Token is valid
+          setToken(storedToken);
+        } else {
+          // ❌ Token invalid
+          await removeToken(); // clear AsyncStorage
+          clearToken(); // clear Zustand store
+        }
+      } catch (err) {
+        console.error("Token verification failed:", err);
+        clearToken();
       }
-      setIsLoading(false);
     }
-    loadToken();
-  }, []);
+
+    setIsLoading(false);
+  }
+
+  loadToken();
+}, []);
+
   if (isLoading) {
     return null; // Or a loading spinner
   }

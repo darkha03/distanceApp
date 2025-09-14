@@ -4,24 +4,77 @@ import { AppText } from "@/components/AppText";
 import { Colors } from "@/constants/Colors";
 import { useAuthStore } from "@/store/authStore";
 import { saveToken } from "@/utils/storage";
-import { router } from "expo-router";
+import { useRouter } from "expo-router";
 import * as React from "react";
 import { Button, TouchableOpacity, View } from "react-native";
 
 export default function RegisterScreen() {
+  const [username, setUsername] = React.useState("");
+  const [email, setEmail] = React.useState("");
+  const [name, setName] = React.useState("");
+  const [password, setPassword] = React.useState("");
+  const [confirmPassword, setConfirmPassword] = React.useState("");
+  const router = useRouter();
   const { setToken } = useAuthStore();
   const handleRegister = async () => {
-    setToken("dummy-token");
-    await saveToken("dummy-token");
-    router.replace("/dashboard");
+    if (password !== confirmPassword) {
+      alert("Passwords do not match");
+      return;
+    }
+    try {
+      const res = await fetch("http://localhost:4000/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, email, password, name }),
+      });
+      if (!res.ok) {
+        throw new Error("Registration failed");
+      }
+      const data = await res.json();
+      setToken(data.token);
+      await saveToken(data.token);
+      router.replace("/dashboard");
+    } catch (err) {
+      console.error("Registration error:", err);
+      alert("Registration failed. Please try again.");
+    }
   } 
   return (
     <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
       <AppText style={{ fontSize: 24, fontWeight: "700", marginBottom: 24 }}>Register</AppText>
-      <AppInput placeholder="Username" style={{ width: 200, marginBottom: 12 }} />
-      <AppInput placeholder="Email" style={{ width: 200, marginBottom: 12 }} keyboardType="email-address" />
-      <AppInput placeholder="Password" style={{ width: 200, marginBottom: 12 }} secureTextEntry />
-      <AppInput placeholder="Confirm Password" style={{ width: 200, marginBottom: 12 }} secureTextEntry />
+      <AppInput 
+        placeholder="Username" 
+        style={{ width: 200, marginBottom: 12 }} 
+        value={username}
+        onChangeText={setUsername}
+      />
+      <AppInput 
+        placeholder="Email" 
+        style={{ width: 200, marginBottom: 12 }} 
+        keyboardType="email-address" 
+        value={email}
+        onChangeText={setEmail}
+      />
+      <AppInput
+        placeholder="Name"
+        style={{ width: 200, marginBottom: 12 }}
+        value={name}
+        onChangeText={setName}
+      />
+      <AppInput 
+        placeholder="Password" 
+        style={{ width: 200, marginBottom: 12 }}
+        secureTextEntry 
+        value={password}
+        onChangeText={setPassword}  
+      />
+      <AppInput 
+        placeholder="Confirm Password"
+        style={{ width: 200, marginBottom: 12 }} 
+        secureTextEntry 
+        value={confirmPassword}
+        onChangeText={setConfirmPassword}
+      />
       <AppButton title="Register" onPress={() => handleRegister()} />
       <TouchableOpacity style={{ marginTop: 16 }} onPress={() => router.push("/auth/login")}>
         <AppText style={{ color: Colors.light.primary }}>Already have an account? Login</AppText>
