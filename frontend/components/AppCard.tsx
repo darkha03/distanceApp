@@ -3,22 +3,24 @@ import * as React from "react";
 import { StyleSheet, Text, TextStyle, TouchableOpacity, View, ViewStyle } from "react-native";
 
 type AppCardProps = {
-  title: string;
+  title?: string;
   description?: string;
   onPress?: () => void;
   style?: ViewStyle;
   titleStyle?: TextStyle;
   descriptionStyle?: TextStyle;
+  children?: React.ReactNode;
 };
 
 export const AppCard: React.FC<AppCardProps> = (props: AppCardProps) => {
-  const { title, description, onPress, style, titleStyle, descriptionStyle } = props;
+  const { title, description, onPress, style, titleStyle, descriptionStyle, children } = props;
   const Container = onPress ? TouchableOpacity : View;
 
   return (
     <Container onPress={onPress} style={[styles.card, style]}>
-      <Text style={[styles.title, titleStyle]}>{title}</Text>
+      {title && <Text style={[styles.title, titleStyle]}>{title}</Text>}
       {description && <Text style={[styles.description, descriptionStyle]}>{description}</Text>}
+      {children}
     </Container>
   );
 };

@@ -13,21 +13,17 @@ export default function RootLayout() {
 useEffect(() => {
   async function loadToken() {
     const storedToken = await getToken();
-
     if (storedToken) {
       try {
-        const res = await fetch("http://localhost:4000/api/auth/verify", {
+        const res = await fetch("http://192.168.1.176:4000/api/auth/verify", {
           method: "GET",
           headers: {
             "Authorization": `Bearer ${storedToken}`,
           },
         });
-
         if (res.ok) {
-          // ✅ Token is valid
           setToken(storedToken);
         } else {
-          // ❌ Token invalid
           await removeToken(); // clear AsyncStorage
           clearToken(); // clear Zustand store
         }
@@ -36,10 +32,8 @@ useEffect(() => {
         clearToken();
       }
     }
-
     setIsLoading(false);
   }
-
   loadToken();
 }, []);
 

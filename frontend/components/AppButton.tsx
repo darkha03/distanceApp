@@ -1,6 +1,6 @@
 import { Colors } from "@/constants/Colors";
 import * as React from "react";
-import { StyleSheet, Text, TextStyle, TouchableOpacity, ViewStyle } from "react-native";
+import { StyleSheet, Text, TextStyle, TouchableOpacity, ViewStyle, View } from "react-native";
 
 type AppButtonProps = {
   title: string;
@@ -10,6 +10,7 @@ type AppButtonProps = {
   disabled?: boolean;
   style?: ViewStyle;
   textStyle?: TextStyle;
+  children?: React.ReactNode;
 };
 
 export const AppButton: React.FC<AppButtonProps> = ({
@@ -20,6 +21,7 @@ export const AppButton: React.FC<AppButtonProps> = ({
   disabled = false,
   style,
   textStyle,
+  children,
 }) => {
   return (
     <TouchableOpacity
@@ -31,7 +33,14 @@ export const AppButton: React.FC<AppButtonProps> = ({
         style,
       ]}
     >
-      <Text style={[styles.text, { color: textColor || "#fff" }, textStyle]}>{title}</Text>
+      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center" }}>
+        {children}
+        {title ? (
+          <Text style={[styles.text, { color: textColor || "#fff" }, textStyle]}>
+            {title}
+          </Text>
+        ) : null}
+      </View>
     </TouchableOpacity>
   );
 };

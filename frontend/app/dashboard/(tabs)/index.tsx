@@ -1,33 +1,41 @@
-import { AppButton } from "@/components/AppButton";
+import { View, StyleSheet, TouchableOpacity } from "react-native";
 import { AppCard } from "@/components/AppCard";
-import { Spacing } from "@/constants/Spacing";
-import * as React from "react";
-import { ScrollView, Text, View } from "react-native";
+import { AppText } from "@/components/AppText";
+import { PartnerInfoCard } from "@/features/PartnerInfoCard";
+import { ActivityCard } from "@/features/ActivityCard";
 
-export default function HomeTab() {
-  const dummyPlans = [
-    { title: "Plan 1", description: "Shared expense plan" },
-    { title: "Plan 2", description: "Vacation trip plan" },
-  ];
+export default function DashboardScreen() {
 
   return (
-    <ScrollView style={{ flex: 1, padding: Spacing.md, marginTop: Spacing.lg }}>
-      <Text style={{ fontSize: 20, fontWeight: "700", marginBottom: 16 }}>
-        Welcome, User!
-      </Text>
+    <View style={styles.container}>
+      {/* Partner Info */}
+      <PartnerInfoCard />
 
-      {dummyPlans.map((plan, index) => (
-        <AppCard
-          key={index}
-          title={plan.title}
-          description={plan.description}
-          onPress={() => console.log(`Clicked ${plan.title}`)}
-        />
-      ))}
+      {/* My Activity */}
+      <ActivityCard />
 
-      <View style={{ marginTop: 16 }}>
-        <AppButton title="Create New Plan" onPress={() => console.log("Create new plan")} />
-      </View>
-    </ScrollView>
+      {/* Special Events */}
+      <AppCard style={styles.card} title="Special Events">
+        <View style={styles.section}>
+          <AppText>Anniversary 🎉 - in 5 days</AppText>
+        </View>
+      </AppCard>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    padding: 16,
+    backgroundColor: "#4b5563", // will later change dynamically
+    marginTop: 40,
+  },
+  card: {
+    marginBottom: 16,
+    backgroundColor: "#000", // dark gray for contrast
+  },
+  section: {
+    marginTop: 12,
+  },
+});
