@@ -4,6 +4,7 @@ import { hashPassword, comparePassword } from "../utils/hash.js";
 import { customAlphabet } from "nanoid";
 
 
+
 const prisma = new PrismaClient();
 const nanoid = customAlphabet("1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ", 8);
 const JWT_SECRET = process.env.JWT_SECRET || "mysecretkey";
@@ -38,7 +39,9 @@ export async function register(req, res) {
     });
 
     const token = jwt.sign(
-      { userId: user.id },
+      { 
+        userId: user.id
+       },
       JWT_SECRET,
       { expiresIn: "1d" }
     );
@@ -67,8 +70,9 @@ export async function login(req, res) {
     }
 
     // Generate JWT
-    const token = jwt.sign(
-      { userId: user.id },
+    const token = jwt.sign(    
+      { userId: user.id
+       },
       JWT_SECRET,
       { expiresIn: "1d" }
     );

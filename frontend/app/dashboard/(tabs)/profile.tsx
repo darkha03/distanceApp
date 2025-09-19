@@ -2,10 +2,22 @@ import { AppButton } from "@/components/AppButton";
 import { useAuthStore } from "@/store/authStore";
 import { removeToken } from "@/utils/storage";
 import { useRouter } from "expo-router";
-import React from "react";
-import { Text, View } from "react-native";
+import React, { useState } from "react";
+import { View } from "react-native";
+import { ProfileCard } from "@/features/ProfileCard";
+import { AppText } from "@/components/AppText";
+import { AuthContext } from "@/utils/authContext";
+
 
 export default function ProfileTab() {
+  const context = React.useContext(AuthContext);
+  if (!context) {
+    throw new Error("AuthContext is undefined, make sure you are using AuthProvider");
+  }
+  const { user, setUser} = context;
+  if (!user) {
+    return ;
+  }
   const { clearToken } = useAuthStore();
   const router = useRouter();
   const handleLogout = async () => {
@@ -13,26 +25,19 @@ export default function ProfileTab() {
     await removeToken();
     router.replace("/auth/login");
   }
+  
   return (
-    <View style={{ flex: 1, padding: 16, justifyContent: "center", alignItems: "center" }}>
-      <Text style={{ fontSize: 20, fontWeight: "700", marginBottom: 8 }}>Username</Text>
-      <Text style={{ fontSize: 16, color: "#666", marginBottom: 24 }}>user@example.com</Text>
-
-      <AppButton
-        title="Edit Profile"
-        onPress={() => console.log("Edit Profile pressed")}
-        style={{ marginBottom: 12, width: 200 }}
-      />
+    
+    <View style={{ flex: 1, padding: 16, backgroundColor: "#4b5563", marginTop: 40 }}>
+      <ProfileCard user={user} />
 
       <AppButton
         title="Log Out"
-        onPress={() => {
-          console.log("Log Out pressed"); 
-          handleLogout();
-        } }
+        onPress={handleLogout}
         color="#FF6347"
-        style={{ width: 200 }}
+        style={{ marginTop: 24, }}
       />
+
     </View>
   );
 }

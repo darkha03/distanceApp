@@ -21,6 +21,14 @@ model User {
   password  String
   name      String
   code      String   @unique
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  status     String?      // nullable so old users don’t break
+  location   String?      // nullable
+  partnerId  String?    @unique      // FK to another user
+
+  partner    User?   @relation("UserPartner", fields: [partnerId], references: [id])
+  partnerOf  User? @relation("UserPartner")
 }

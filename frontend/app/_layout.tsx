@@ -10,32 +10,32 @@ export default function RootLayout() {
   const { token, setToken, clearToken } = useAuthStore();
   const colorScheme = useColorScheme();
   const bgColor = colorScheme === 'dark' ? Colors.dark.background : Colors.light.background;
-useEffect(() => {
-  async function loadToken() {
-    const storedToken = await getToken();
-    if (storedToken) {
-      try {
-        const res = await fetch("http://192.168.1.176:4000/api/auth/verify", {
-          method: "GET",
-          headers: {
-            "Authorization": `Bearer ${storedToken}`,
-          },
-        });
-        if (res.ok) {
-          setToken(storedToken);
-        } else {
-          await removeToken(); // clear AsyncStorage
-          clearToken(); // clear Zustand store
+  useEffect(() => {
+    async function loadToken() {
+      const storedToken = await getToken();
+      if (storedToken) {
+        try {
+          const res = await fetch("http://192.168.1.176:4000/api/auth/verify", {
+            method: "GET",
+            headers: {
+              "Authorization": `Bearer ${storedToken}`,
+            },
+          });
+          if (res.ok) {
+            setToken(storedToken);
+          } else {
+            await removeToken(); // clear AsyncStorage
+            clearToken(); // clear Zustand store
+          }
+        } catch (err) {
+          console.error("Token verification failed:", err);
+          clearToken();
         }
-      } catch (err) {
-        console.error("Token verification failed:", err);
-        clearToken();
       }
+      setIsLoading(false);
     }
-    setIsLoading(false);
-  }
-  loadToken();
-}, []);
+    loadToken();
+  }, []);
 
   if (isLoading) {
     return null; // Or a loading spinner
