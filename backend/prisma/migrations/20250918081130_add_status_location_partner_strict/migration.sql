@@ -6,7 +6,7 @@
 */
 -- AlterTable
 ALTER TABLE "public"."User" 
-ADD CONSTRAINT user_not_self_partner CHECK ("id" IS DISTINCT FROM "partnerId");
+ADD CONSTRAINT user_not_self_partner CHECK ("id" IS DISTINCT FROM "partnerId"),
 ADD COLUMN     "location" TEXT,
 ADD COLUMN     "partnerId" TEXT,
 ADD COLUMN     "status" TEXT;

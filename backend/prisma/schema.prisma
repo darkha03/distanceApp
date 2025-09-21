@@ -30,5 +30,21 @@ model User {
   partnerId  String?    @unique      // FK to another user
 
   partner    User?   @relation("UserPartner", fields: [partnerId], references: [id])
-  partnerOf  User? @relation("UserPartner")
+  partnerOf  User?   @relation("UserPartner")
+  sentInvites     Invite[] @relation("SentInvites")
+  receivedInvites Invite[] @relation("ReceivedInvites")
+}
+
+model Invite {
+  id         String   @id @default(uuid())
+  senderId   String
+  receiverId String
+  status     String   @default("pending") // pending | accepted | declined
+  notified   Boolean  @default(false)     
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  sender   User @relation("SentInvites", fields: [senderId], references: [id])
+  receiver User @relation("ReceivedInvites", fields: [receiverId], references: [id])
 }

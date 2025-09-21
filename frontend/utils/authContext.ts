@@ -16,3 +16,5 @@ type AuthContextType = {
 };
 
 export const AuthContext = React.createContext<AuthContextType | undefined>(undefined);
+
+export const useAuthContext = () => React.useContext(AuthContext);

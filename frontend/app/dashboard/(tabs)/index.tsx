@@ -5,6 +5,7 @@ import { AppText } from "@/components/AppText";
 import { PartnerInfoCard } from "@/features/PartnerInfoCard";
 import { ActivityCard } from "@/features/ActivityCard";
 import { AuthContext } from "@/utils/authContext";
+import { AddPartnerCard } from "@/features/AddPartnerCard";
 
 export default function DashboardScreen() {
   const context = React.useContext(AuthContext);
@@ -20,11 +21,15 @@ export default function DashboardScreen() {
       </View>
     );
   }
+
+
+
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} 
       behavior= {Platform.OS === "ios" ? "padding" : "height"}>
       <ScrollView style={styles.container}>
         {/* Partner Info */}
+        {!user.partnerId && <AddPartnerCard />}
         {user.partnerId && <PartnerInfoCard/> }
         
         {/* My Activity */}
