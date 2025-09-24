@@ -12,7 +12,7 @@ export default function DashboardScreen() {
   if (!context) {
     throw new Error("AuthContext is undefined, make sure you are using AuthProvider");
   }
-  const { user, setUser} = context;
+  const { user } = context;
 
   if (!user) {
     return (

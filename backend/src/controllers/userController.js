@@ -4,35 +4,42 @@ import { getIO } from "../utils/socket.js";
 const prisma = new PrismaClient();
 
 // GET USER PROFILE
+// Return user with partner info
 export async function getUserProfile(req, res) {
     try {
         console.log("Fetching user profile");
-        const { id } = req.params;
-
+        const id = req.user.userId;
         const user = await prisma.user.findUnique({
-        where: { id },
-        select: {
-            id: true,
-            username: true,
-            email: true,
-            name: true,
-            code: true,
-            status: true,
-            location: true,
-            partnerId: true,
-        },
+            where: { id },
+            select: {
+                id: true,
+                username: true,
+                email: true,
+                name: true,
+                code: true,
+                status: true,
+                location: true,
+                partnerId: true,
+                partner: {
+                    select: {
+                        name: true,
+                        status: true,
+                        location: true,
+                    }
+                }
+            }
         });
-
         if (!user) {
             return res.status(404).json({ error: "User not found" });
         }
         res.json(user);
     } catch (error) {
-        res.status(500).json({ error: "Something went wrong" });
+        res.status(500).json({ error: error.message || "Something went wrong" });
     }
 }
 
 // UPDATE USER PROFILE
+// Return updated user with partner info
 export async function updateUserProfile(req, res) {
     try {
         const userId = req.user.userId;
@@ -55,7 +62,15 @@ export async function updateUserProfile(req, res) {
             status: true,
             location: true,
             partnerId: true,
-        },
+            }, include: {
+                partner: {
+                    select: {
+                        name: true,
+                        status: true,
+                        location: true,
+                    }
+                }
+            },
         });
         res.json(updatedUser);
     } catch (error) {
@@ -64,6 +79,8 @@ export async function updateUserProfile(req, res) {
 }
 
 // ADD PARTNER (SEND INVITE)
+// Return message
+// Emit socket event to the partner with invite details (e.g., fromUserId, fromUserName)
 export async function addPartner(req, res) {
     try {
 
@@ -96,10 +113,12 @@ export async function addPartner(req, res) {
         });
         // Emit socket event to the partner
         const io = getIO();
-        io.to(partner.id).emit("partner:invite", { 
-            id: invite.id,
-            fromUserId: userId,
-            fromUser: user.username
+        io.to(partner.id).emit("partner:invite", {
+          id: invite.id,
+          sender: { id: user.id, username: user.username }, // unify shape
+          senderId: user.id,
+          receiverId: partner.id,
+          status: invite.status
         });
         res.json({ message: "Partner invite sent" });
     }
@@ -110,6 +129,7 @@ export async function addPartner(req, res) {
 }
 
 // GET INVITE
+// Return pending invite details 
 export async function getInvite(req, res) {
     try {
         const userId = req.user.userId;
@@ -140,6 +160,9 @@ export async function getInvite(req, res) {
 }
 
 // RESPOND TO INVITE (ACCEPT/REJECT)
+// Return message
+// If accepted, update both users to set each other as partners
+// Emit socket event to the inviter with the response (accepted/rejected)
 export async function respondInvite(req, res) {
     try {
         const userId = req.user.userId;
@@ -161,26 +184,29 @@ export async function respondInvite(req, res) {
         }
         if (status === "accepted") {
             // Update both users to set each other as partners
-            await prisma.user.update({
+            await prisma.$transaction([
+                prisma.user.update({ where: { id: userId }, data: { partnerId: invite.senderId } }),
+                prisma.user.update({ where: { id: invite.senderId }, data: { partnerId: userId } }),
+                prisma.invite.update({ where: { id: invite.id }, data: { status: "accepted" } })
+            ]);
+
+            const receiverView = await prisma.user.findUnique({
                 where: { id: userId },
-                data: { partnerId: invite.senderId },
+                select: { id: true, username: true, name: true, status: true, location: true, partnerId: true }
             });
-            console.log("User updated with partner:", invite.senderId);
-            await prisma.user.update({
+            const senderPartnerInfo = await prisma.user.findUnique({
                 where: { id: invite.senderId },
-                data: { partnerId: userId },
+                select: { id: true, username: true, name: true, status: true, location: true }
             });
-            console.log("Partner updated with user:", userId);
-            // Update invite status
-            await prisma.invite.update({
-                where: { id: invite.id },
-                data: { status: "accepted" },
-            });
-            console.log("Invite status updated to accepted");
-            // Emit socket event to the inviter
+
             const io = getIO();
-            io.to(invite.senderId).emit("partner:accepted", { partnerId: userId });
-            return res.json({ message: "Invite accepted", partnerId: invite.senderId });
+            io.to(invite.senderId).emit("partner:accepted", senderPartnerInfo);
+
+            return res.json({
+                message: "Invite accepted",
+                user: receiverView,              // updated receiver (caller)
+                partner: senderPartnerInfo       // partner details (sender)
+            });
         }
         else {
             // Update invite status to rejected
@@ -199,6 +225,8 @@ export async function respondInvite(req, res) {
 }
 
 // GET INVITE RESPONSE (ACCEPTED/REJECTED/PENDING)
+// Return latest invite status for the user
+// (if user sent an invite, check its status)
 export async function getResponseInvite(req, res) {
     try {
         const userId = req.user.userId;

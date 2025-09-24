@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { View, StyleSheet, TouchableOpacity, Modal, ActivityIndicator } from "react-native";
 import { Colors } from "@/constants/Colors";
 import { Ionicons } from "@expo/vector-icons";
@@ -14,184 +14,152 @@ export const AddPartnerCard = () => {
   const [partnerCode, setPartnerCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const { partner, sendInvite, inviteStatus, acceptInvite, rejectInvite } = usePartner();
-  const { inviteRequests, getInvite, getResponseInvite } = usePartner();
-  const [inviteVisible, setInviteVisible] = useState(false);
+  const {
+    sendInvite,
+    inviteStatus,
+    acceptInvite,
+    rejectInvite,
+    inviteRequests,
+    getInvite,
+    getResponseInvite,
+  } = usePartner(); // single call
   const { user, setUser } = useAuthContext();
   const { token } = useAuthStore();
+  const [inviteVisible, setInviteVisible] = useState(false);
 
-    //Fetch invites on mount
-    React.useEffect(() => {
-        getInvite();
-        getResponseInvite();
-    }, []);
+  useEffect(() => {
+    getInvite().catch(()=>{});
+    getResponseInvite().catch(()=>{});
+  }, []);
 
-    // --- Handle adding partner ---
+  useEffect(() => {
+    if (inviteRequests.length > 0) setInviteVisible(true);
+  }, [inviteRequests]);
 
-    const onAddPartner = async (code) => {
-        try {
-        setLoading(true);
-        setError("");
-        await sendInvite(code); // send invite via context
-        setVisible(false);
-        setPartnerCode("");
-        } catch (err) {
-        setError(err.message);
-        } finally {
-        setLoading(false);
-        }
-    };
-
-    const handleConfirm = () => {
-        if (!partnerCode.trim()) {
-        setError("Please enter a partner code");
-        return;
-        }
-        onAddPartner(partnerCode);
-    };
-
-    // Handle incoming invite request
-    React.useEffect(() => {
-        if (inviteRequests.length > 0) {
-        setInviteVisible(true);
-        }
-    }, [inviteRequests]);
-
-    const handleInvite = ({status, fromUserId}) => {
-        fetch("http://localhost:4000/api/users/respond-invite", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({ 
-                status: status,
-                fromUserId: fromUserId
-             }),
-        }).then(res => res.json())
-        .then(data => {
-            console.log("Invite response:", data);
-        }).catch(err => {
-            console.error("Error responding to invite:", err);
-        });
-        setInviteVisible(false);
+  const onAddPartner = async () => {
+    if (!partnerCode.trim()) {
+      setError("Please enter a partner code");
+      return;
     }
+    try {
+      setLoading(true);
+      setError("");
+      await sendInvite(partnerCode.trim());
+      setVisible(false);
+      setPartnerCode("");
+    } catch (e) {
+      setError(e.message || "Failed to send invite");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    // Handle successful invite acceptance
-    React.useEffect(() => {
-        if (inviteStatus === "accepted") {
-            // Update user context with new partner info
-            setUser((prev) => prev ? { ...prev, partnerId: partner.id } : prev);
-            console.log("Partner accepted:", partner);
-            setInviteVisible(false);
-        }
-    }, [inviteStatus]);
+  const respond = async (invite, status) => {
+    try {
+      const res = await fetch("http://localhost:4000/api/users/respond-invite", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ status }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed");
+      if (status === "accepted") {
+        // data.user is the updated current user, data.partner is partner details
+        setUser(prev => prev ? { ...prev, ...data.user, partner: data.partner } : prev);
+      }
+    } catch (e) {
+      console.log("Respond error:", e);
+    } finally {
+      setInviteVisible(false);
+    }
+  };
 
-    return (
+  return (
     <>
-    {inviteStatus === "pending" && (
-        <View style={{ padding: 10, backgroundColor: Colors.light.primary, borderRadius: 8, marginBottom: 12 }}>
-            <AppText style={{ color: "white", textAlign: "center" }}>Invite sent! Waiting for partner to accept.</AppText>
-            <View style={styles.iconWrapper}>
-                <ActivityIndicator size="small" color="white" style={{ marginTop: 8 }} />
-            </View>
+      {inviteStatus === "pending" && (
+        <View style={styles.notice}>
+          <AppText style={{ color: "white", textAlign: "center" }}>
+            Invite sent! Waiting for partner to accept.
+          </AppText>
+          <View style={styles.iconWrapper}>
+            <ActivityIndicator size="small" color="white" style={{ marginTop: 8 }} />
+          </View>
         </View>
-    )}
-    
-    {inviteStatus !== "pending" && (
+      )}
+
+      {inviteStatus !== "pending" && (
         <TouchableOpacity style={styles.card} onPress={() => setVisible(true)}>
-            <AppText style={styles.cardText}>ADD YOUR PARTNER HERE</AppText>
-            <View style={styles.iconWrapper}>
-                <Ionicons name="add-circle" size={48} color={Colors.light.primary} />
-            </View>
+          <AppText style={styles.cardText}>ADD YOUR PARTNER HERE</AppText>
+          <View style={styles.iconWrapper}>
+            <Ionicons name="add-circle" size={48} color={Colors.light.primary} />
+          </View>
         </TouchableOpacity>
-    )}
+      )}
 
-    {/* Popup Modal */}
-    <Modal visible={visible} transparent animationType="fade">
-    <View style={styles.overlay}>
-        <View style={styles.popup}>
-        <AppText style={styles.title}>Enter Partner Code</AppText>
-
-        <AppInput
-            style={styles.input}
-            placeholder="Partner Code"
-            value={partnerCode}
-            onChangeText={setPartnerCode}
-            editable={!loading}
-        />
-
-        {error ? (
-            <AppText style={styles.error}>{error}</AppText>
-        ) : null}
-
-        {loading ? (
-            <ActivityIndicator size="small" color={Colors.light.primary} />
-        ) : (
-            <View
-            style={{
-                flexDirection: "row",
-                justifyContent: "space-between",
-                marginTop: 12,
-            }}
-            >
-            <AppButton
-                title="Cancel"
-                onPress={() => setVisible(false)}
-                style={{ flex: 1, marginRight: 8 }}
-                color="#ccc"
-            />
-            <AppButton
-                title="Add"
-                onPress={handleConfirm}
-                style={{ flex: 1, marginLeft: 8 }}
-            />
-            </View>
-        )}
-        </View>
-    </View>
-    </Modal>
-
-    {/* Incoming Invite Modal */}
-    <Modal visible={inviteVisible} transparent animationType="fade">
+      <Modal visible={visible} transparent animationType="fade">
         <View style={styles.overlay}>
-            <View style={styles.popup}>
+          <View style={styles.popup}>
+            <AppText style={styles.title}>Enter Partner Code</AppText>
+            <AppInput
+              style={styles.input}
+              placeholder="Partner Code"
+              value={partnerCode}
+              onChangeText={setPartnerCode}
+              editable={!loading}
+            />
+            {!!error && <AppText style={styles.error}>{error}</AppText>}
+            {loading ? (
+              <ActivityIndicator size="small" color={Colors.light.primary} />
+            ) : (
+              <View style={styles.rowBtns}>
+                <AppButton title="Cancel" onPress={() => setVisible(false)} style={{ flex: 1, marginRight: 8 }} color="#ccc" />
+                <AppButton title="Add" onPress={onAddPartner} style={{ flex: 1, marginLeft: 8 }} />
+              </View>
+            )}
+          </View>
+        </View>
+      </Modal>
+
+      <Modal visible={inviteVisible} transparent animationType="fade">
+        <View style={styles.overlay}>
+          <View style={styles.popup}>
             <AppText style={styles.title}>Partner Invites</AppText>
             {inviteRequests.length === 0 ? (
-                <AppText>No invites.</AppText>
+              <AppText>No invites.</AppText>
             ) : (
-                inviteRequests.map(invite => (
+              inviteRequests.map(invite => (
                 <View key={invite.id} style={{ marginBottom: 16 }}>
-                    <AppText style={{ marginBottom: 12 }}>
-                    {invite.sender.username} has invited you to be partners.
-                    </AppText>
-                    <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+                  <AppText style={{ marginBottom: 12 }}>
+                    {invite.sender?.username || "Someone"} has invited you to be partners.
+                  </AppText>
+                  <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
                     <AppButton
-                        title="Reject"
-                        onPress={() => {
-                            rejectInvite(invite.id);    
-                            handleInvite({status: "rejected", fromUserId: invite.sender.id});
-                        }}
-                        style={{ flex: 1, marginRight: 8 }}
-                        color="#ccc"
+                      title="Reject"
+                      onPress={() => {
+                        rejectInvite(invite.id);
+                        respond(invite, "rejected");
+                      }}
+                      style={{ flex: 1, marginRight: 8 }}
+                      color="#ccc"
                     />
                     <AppButton
-                        title="Accept"
-                        onPress={() => {
-                            acceptInvite(invite.id);
-                            setUser((prev) => prev ? { ...prev, partnerId: invite.sender.id } : prev);
-                            console.log("User updated with new partner:", user);
-                            handleInvite({status: "accepted", fromUserId: invite.sender.id});                           
-                        }}
-                        style={{ flex: 1, marginLeft: 8 }}
+                      title="Accept"
+                      onPress={() => {
+                        acceptInvite(invite.id);
+                        respond(invite, "accepted");
+                      }}
+                      style={{ flex: 1, marginLeft: 8 }}
                     />
-                    </View>
+                  </View>
                 </View>
-                ))
+              ))
             )}
-            </View>
+          </View>
         </View>
-        </Modal>
+      </Modal>
     </>
   );
 };
@@ -240,5 +208,16 @@ const styles = StyleSheet.create({
     color: "red",
     fontSize: 14,
     marginTop: 4,
+  },
+  notice: {
+    padding: 10,
+    backgroundColor: Colors.light.primary,
+    borderRadius: 8,
+    marginBottom: 12
+  },
+  rowBtns: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 12
   },
 });

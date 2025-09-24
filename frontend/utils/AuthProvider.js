@@ -1,44 +1,44 @@
-import React, { createContext, useState, useEffect } from "react";
-import { jwtDecode } from "jwt-decode";
-import { removeToken } from "./storage";
+import React, { useState, useEffect } from "react";
 import { AuthContext } from "./authContext";
 import { useAuthStore } from "@/store/authStore";
 
-
 export const AuthProvider = ({ children }) => {
-  const context = React.useContext(AuthContext);
-  const [user, setUser] = useState(context?.user || null);
   const { token, clearToken } = useAuthStore();
-  // Load token once at app start
-  useEffect(() => {
-    const loadToken = async () => {
-      try {
-        if (token) {
-            const userId = jwtDecode(token);
-            fetch(`http://localhost:4000/api/users/${userId.userId}`, {
-                headers: { Authorization: `Bearer ${token}` },
-            })
-            .then((res) => res.json())
-            .then((data) => setUser(data))
-            .catch((err) => {
-                console.error("Failed to fetch user", err);
-                clearToken();
-                removeToken();
-            });
-        }
-      } catch (err) {
-        console.error("Failed to load token", err);
-      }
-    };
-    loadToken();
-  }, []);
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  const updateUser = (newUser) => {
-    setUser((prev) => ({ ...prev, ...newUser }));
+  // Example: initial load user profile if token
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      if (!token) {
+        setUser(null);
+        setLoading(false);
+        return;
+      }
+      try {
+        const res = await fetch("http://localhost:4000/api/users/me", {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        const data = await res.json();
+        if (active && res.ok) setUser(data);
+      } finally {
+        if (active) setLoading(false);
+      }
+    })();
+    return () => { active = false; };
+  }, [token]);
+
+  const value = {
+    user,
+    setUser,
+    token,
+    clearToken,
+    loading
   };
 
   return (
-    <AuthContext.Provider value={{ user, setUser: updateUser }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );

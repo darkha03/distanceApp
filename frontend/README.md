@@ -48,3 +48,34 @@ Join our community of developers creating universal apps.
 
 - [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
 - [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+
+frontend/
+├── app/
+│   ├── _layout.tsx
+│   ├── auth/
+│   │   ├── login.tsx
+│   │   └── register.tsx
+│   └── dashboard/
+│       └── (tabs)/
+│           ├── _layout.tsx
+│           └── index.tsx
+├── components/
+│   ├── AppButton.tsx
+│   ├── AppInput.tsx
+│   ├── AppText.tsx
+│   ├── AppCard.tsx
+├── features/
+│   ├── AddPartnerCard.jsx
+│   ├── PartnerInfoCard.jsx
+├── utils/
+│   ├── authContext.ts
+│   ├── AuthProvider.js
+│   ├── PartnerContext.jsx
+│   └── SocketContext.js
+├── constants/
+│   ├── Colors.ts
+│   ├── Typography.ts
+│   ├── Spacing.ts
+├── package.json
+├── README.md
+└── ...other config and asset files

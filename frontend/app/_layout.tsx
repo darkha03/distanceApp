@@ -15,7 +15,7 @@ export default function RootLayout() {
       const storedToken = await getToken();
       if (storedToken) {
         try {
-          const res = await fetch("http://192.168.1.176:4000/api/auth/verify", {
+          const res = await fetch("http://localhost:4000/api/auth/verify", {
             method: "GET",
             headers: {
               "Authorization": `Bearer ${storedToken}`,

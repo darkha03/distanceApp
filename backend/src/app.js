@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import authRoutes from "./routes/authRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
+import partnerRoutes from "./routes/partnerRoutes.js";
 import { authMiddleware } from "./middleware/authMiddleware.js";
 
 const app = express();
@@ -14,7 +15,7 @@ app.use(express.json());      // parse JSON bodies
 // 🔹 Placeholder route groups
 app.use("/api/auth", authRoutes);
 app.use("/api/users", authMiddleware, userRoutes);
-app.use("/api/messages", (req, res) => res.json({ message: "message route placeholder" }));
+app.use("/api/partners", authMiddleware, partnerRoutes);
 
 // 🔹 Fallback for unknown routes
 app.use((req, res) => {

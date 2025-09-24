@@ -22,7 +22,6 @@ export const ProfileCard = ({ user }) => {
   const handleSave = () => {
     console.log("Profile updated:", form);
     setIsEditing(false);
-    // 🔗 later: call backend update API
     fetch(`http://localhost:4000/api/users/${user.id}`, {
         method: "PUT",
         headers: {
