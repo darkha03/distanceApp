@@ -39,13 +39,12 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
   if (!authCtx) throw new Error("AuthContext missing");
   const { user, setUser } = authCtx;
   const socket = useContext(SocketContext) as import("socket.io-client").Socket | null;
-
-  
   const [inviteStatus, setInviteStatus] = useState("idle");
   const [inviteRequests, setInviteRequests] = useState<Invite[]>([]);
+  const BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://localhost:4000';
 
   const sendInvite = async (code: string) => {
-    const res = await fetch("http://localhost:4000/api/users/add-partner", {
+    const res = await fetch(`${BASE_URL}/api/users/add-partner`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify({ partnerCode: code }),
@@ -60,7 +59,7 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
   };
 
   const getInvite = async () => {
-    const res = await fetch("http://localhost:4000/api/users/add-partner", {
+    const res = await fetch("/api/users/add-partner", {
       method: "GET",
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -72,7 +71,7 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
   };
 
   const getResponseInvite = async () => {
-    const res = await fetch("http://localhost:4000/api/users/respond-invite", {
+    const res = await fetch(`${BASE_URL}/api/users/respond-invite`, {
       method: "GET",
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -90,7 +89,7 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const removePartner = async () => {
     if (!user?.partnerId) return;
-    const res = await fetch(`http://localhost:4000/api/partners/${user.partnerId}`, {
+    const res = await fetch(`${BASE_URL}/api/partners/${user.partnerId}`, {
       method: "DELETE",
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -129,6 +128,14 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
     socket.on("partner:removed", () => {
       setUser(prev => prev ? { ...prev, partner: null, partnerId: undefined } : prev);
       setInviteStatus("idle");
+    });
+
+    socket.on("partner:status", ({ partnerId, status }) => {
+      setUser(prev => prev
+        ? prev.partner && prev.partnerId === partnerId
+          ? { ...prev, partner: { ...prev.partner, status } }
+          : prev
+        : prev);
     });
 
     return () => {

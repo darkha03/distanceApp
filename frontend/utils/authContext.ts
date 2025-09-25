@@ -8,7 +8,10 @@ type User = {
   code?: string;
   location?: string;
   partnerId?: string;
-  partner?: { name: string; status: string; location: string } | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  timezone?: string;
+  partner?: { name: string; status: string; location: string; latitude: number; longitude: number; timezone: string } | null;
 };
 
 type AuthContextType = {

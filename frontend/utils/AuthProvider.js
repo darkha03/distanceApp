@@ -6,6 +6,7 @@ export const AuthProvider = ({ children }) => {
   const { token, clearToken } = useAuthStore();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://localhost:4000';
 
   // Example: initial load user profile if token
   useEffect(() => {
@@ -17,7 +18,7 @@ export const AuthProvider = ({ children }) => {
         return;
       }
       try {
-        const res = await fetch("http://localhost:4000/api/users/me", {
+        const res = await fetch(`${BASE_URL}/api/users/me`, {
             headers: { Authorization: `Bearer ${token}` }
         });
         const data = await res.json();

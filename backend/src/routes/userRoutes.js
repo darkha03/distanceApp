@@ -4,7 +4,9 @@ import { getUserProfile,
         addPartner,
         getInvite, 
         respondInvite,
-        getResponseInvite
+        getResponseInvite,
+        changePassword,
+        updateUserStatus
     } from "../controllers/userController.js";
 
 
@@ -19,6 +21,10 @@ router.get("/add-partner", getInvite);
 router.post("/respond-invite", respondInvite);
 
 router.get("/respond-invite", getResponseInvite);
+
+router.post("/password", changePassword);
+
+router.put("/status", updateUserStatus);
 
 // Update user profile
 router.put("/:id", updateUserProfile);

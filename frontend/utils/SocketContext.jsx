@@ -9,11 +9,12 @@ export const SocketProvider = ({ children }) => {
   const { user } = React.useContext(AuthContext);
   const { token } = useAuthStore();
   const [socket, setSocket] = useState(null);
+  const BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://localhost:4000';
 
   useEffect(() => {
     if (!token) return;
 
-    const newSocket = io("http://localhost:4000", {
+    const newSocket = io(`${BASE_URL}`, {
       auth: { token },
     });
 

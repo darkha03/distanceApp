@@ -26,6 +26,7 @@ export const AddPartnerCard = () => {
   const { user, setUser } = useAuthContext();
   const { token } = useAuthStore();
   const [inviteVisible, setInviteVisible] = useState(false);
+  const BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://localhost:4000';
 
   useEffect(() => {
     getInvite().catch(()=>{});
@@ -56,7 +57,7 @@ export const AddPartnerCard = () => {
 
   const respond = async (invite, status) => {
     try {
-      const res = await fetch("http://localhost:4000/api/users/respond-invite", {
+      const res = await fetch(`${BASE_URL}/api/users/respond-invite`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

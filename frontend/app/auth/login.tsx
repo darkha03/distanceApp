@@ -15,11 +15,12 @@ export default function LoginScreen() {
   const [error, setError] = React.useState("");
   const { setToken } = useAuthStore();
   const router = useRouter();
+  const BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://localhost:4000';
   const handleLogin = async () => {
     setLoading(true);
     setError("");
     try {
-      const res = await fetch("http://localhost:4000/api/auth/login", {
+      const res = await fetch(`${BASE_URL}/api/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password }),

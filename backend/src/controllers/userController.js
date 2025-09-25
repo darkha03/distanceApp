@@ -1,5 +1,6 @@
 import { PrismaClient } from "../generated/prisma/client.js";
 import { getIO } from "../utils/socket.js";
+import { hashPassword } from "../utils/hash.js";
 
 const prisma = new PrismaClient();
 
@@ -20,11 +21,17 @@ export async function getUserProfile(req, res) {
                 status: true,
                 location: true,
                 partnerId: true,
+                latitude: true,
+                longitude: true,
+                timezone: true,
                 partner: {
                     select: {
                         name: true,
                         status: true,
                         location: true,
+                        latitude: true,
+                        longitude: true,
+                        timezone: true,
                     }
                 }
             }
@@ -43,13 +50,9 @@ export async function getUserProfile(req, res) {
 export async function updateUserProfile(req, res) {
     try {
         const userId = req.user.userId;
-        const { name, location, password } = req.body;
-        const updateData = { name, location };
+        const { name, location, latitude, longitude, timezone } = req.body;
+        const updateData = { name, location, latitude, longitude, timezone };
 
-        if (password) {
-            const hashedPassword = await hashPassword(password);
-            updateData.password = hashedPassword;
-        }
         const updatedUser = await prisma.user.update({
             where: { id: userId },
             data: updateData,
@@ -62,15 +65,19 @@ export async function updateUserProfile(req, res) {
             status: true,
             location: true,
             partnerId: true,
-            }, include: {
-                partner: {
-                    select: {
-                        name: true,
-                        status: true,
-                        location: true,
-                    }
+            latitude: true,
+            longitude: true,
+            timezone: true,
+            partner: {
+                select: {
+                    name: true,
+                    status: true,
+                    location: true,
+                    latitude: true,
+                    longitude: true,
+                    timezone: true,
                 }
-            },
+            }},
         });
         res.json(updatedUser);
     } catch (error) {
@@ -192,11 +199,11 @@ export async function respondInvite(req, res) {
 
             const receiverView = await prisma.user.findUnique({
                 where: { id: userId },
-                select: { id: true, username: true, name: true, status: true, location: true, partnerId: true }
+                select: { id: true, username: true, name: true, status: true, location: true, partnerId: true, latitude: true, longitude: true, timezone: true  }
             });
             const senderPartnerInfo = await prisma.user.findUnique({
                 where: { id: invite.senderId },
-                select: { id: true, username: true, name: true, status: true, location: true }
+                select: { id: true, username: true, name: true, status: true, location: true, latitude: true, longitude: true, timezone: true  }
             });
 
             const io = getIO();
@@ -241,6 +248,69 @@ export async function getResponseInvite(req, res) {
         }
         res.json(invite);
 
+    } catch (error) {
+        res.status(500).json({ error: "Something went wrong" });
+    }
+}
+
+// CHANGE PASSWORD
+// Return message
+export async function changePassword(req, res) {
+    try {
+        const userId = req.user.userId;
+        const { newPassword } = req.body;
+        if (!newPassword || newPassword.length < 6) {
+            return res.status(400).json({ error: "Password must be at least 6 characters" });
+        }
+        const hashedPassword = await hashPassword(newPassword);
+        await prisma.user.update({
+            where: { id: userId },
+            data: { password: hashedPassword },
+        });
+        res.json({ message: "Password changed successfully" });
+    } catch (error) {
+        res.status(500).json({ error: "Something went wrong" });
+    }
+}
+
+// UPDATE USER STATUS
+// Return updated user with partner info
+// Emit socket event to the partner with the new status
+export async function updateUserStatus(req, res) {
+    try {
+        const userId = req.user.userId;
+        const { status } = req.body;
+        if (!["sleep", "study", "relax", "playing"].includes(status)) {
+            return res.status(400).json({ error: "Invalid status" });
+        }
+        const updatedUser = await prisma.user.update({
+            where: { id: userId },
+            data: { status },
+            select: {
+            id: true,
+            username: true,
+            email: true,
+            name: true,
+            code: true, 
+            status: true,
+            location: true,
+            partnerId: true,
+            partner: {
+                select: {  
+                    name: true,
+                    status: true,
+                    location: true,
+                }
+            }
+            },
+        });
+        // Notify partner via WebSocket
+        const user = await prisma.user.findUnique({ where: { id: userId } });
+        if (user.partnerId) {
+            const io = getIO();
+            io.to(user.partnerId).emit("partner:status", { partnerId: userId, status });
+        }
+        res.json(updatedUser);
     } catch (error) {
         res.status(500).json({ error: "Something went wrong" });
     }

@@ -6,19 +6,30 @@ import { Colors } from "@/constants/Colors";
 import { useAuthStore } from "@/store/authStore";
 import { useRouter } from "expo-router";
 import { AuthContext } from "@/utils/authContext";
+import * as Clipboard from 'expo-clipboard';
 import React from "react";
 
 export default function ProfileScreen() {
   const { clearToken, token } = useAuthStore();
   const router = useRouter();
   const authContext = React.useContext(AuthContext);
-  const [copying, setCopying] = React.useState(false);
+  const [copied, setCopied] = React.useState(false);
 
   if (!token || !authContext?.user) {
     return null;
   }
   // Fake invite code from token (later decode from JWT or API)
   const inviteCode = authContext.user.code || "N/A";
+
+  const copyCode = async () => {
+  try {
+    await Clipboard.setStringAsync(inviteCode);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  } catch (e) {
+    console.log("Copy failed", e);
+  }
+};
 
   const handleLogout = async () => {
     clearToken();
@@ -37,15 +48,11 @@ export default function ProfileScreen() {
         <AppText style={styles.inviteLabel}>Your Invite Code</AppText>
         <View style={styles.inviteRow}>
           <AppText style={styles.inviteCode}>{inviteCode}</AppText>
-          <TouchableOpacity onPress={() => {
-            navigator.clipboard.writeText(inviteCode);
-            setCopying(true);
-            setTimeout(() => setCopying(false), 60);
-          }}>
-            {copying ? (
-            <Ionicons name="copy-outline" size={20} color={Colors.light.text} />
+          <TouchableOpacity onPress={copyCode}>
+            {copied ? (
+              <Ionicons name="checkmark-outline" size={20} color={Colors.light.primary} />
             ) : (
-            <Ionicons name="checkmark-outline" size={20} color={Colors.light.primary} />
+              <Ionicons name="copy-outline" size={20} color={Colors.light.text} />
             )}
           </TouchableOpacity>
         </View>
@@ -82,9 +89,8 @@ export default function ProfileScreen() {
       <View style={styles.footer}>
         <AppButton
           title="Log Out"
-          color="#FF6347"
           onPress={handleLogout}
-          style={{ width: "100%" }}
+          style={{ width: "100%", backgroundColor: Colors.light.primary }}
         />
       </View>
     </View>
@@ -92,7 +98,7 @@ export default function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, backgroundColor: "#4b5563" },
+  container: { flex: 1, padding: 20, backgroundColor: "#000", marginTop: 40 },
 
   avatarWrapper: { alignItems: "center", marginBottom: 20 },
 

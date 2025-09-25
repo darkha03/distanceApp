@@ -1,19 +1,54 @@
 import React, { useState } from "react";
 import { View, Text, StyleSheet, Button, Modal, TextInput, Pressable } from "react-native";
 import { AuthContext } from "@/utils/authContext";
+import { useAuthStore } from "@/store/authStore";
 
 export default function AccountScreen() {
   const [changePassVisible, setChangePassVisible] = useState(false);
   const [deleteVisible, setDeleteVisible] = useState(false);
-
+  const { token } = useAuthStore();
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  
+  const [error, setError] = useState("");
+  const BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://localhost:4000';
   const authContext = React.useContext(AuthContext);
   if (!authContext?.user) {
     return null;
   }
   const { user } = authContext;
+
+  const handleChangePassword = async () => {
+    if (newPassword !== confirmPassword) {
+      setError("Passwords do not match");
+      return;
+    }
+    
+    // Call backend API to change password
+    try {
+    const res = await fetch(`${BASE_URL}/api/users/password`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ newPassword }),
+    });
+    if (!res.ok) {
+      const data = await res.json();
+      setError(data.error || "Failed to change password");
+    }
+    else {
+      setError("");
+      setChangePassVisible(false);
+      setNewPassword("");
+      setConfirmPassword("");
+    }
+    } catch (e) {
+    console.log("Password change failed", e);
+    setError("Password change failed");
+    return;
+    }
+  }
 
   return (
     <View style={styles.container}>
@@ -58,7 +93,8 @@ export default function AccountScreen() {
               value={confirmPassword}
               onChangeText={setConfirmPassword}
             />
-            <Pressable style={styles.btn} onPress={() => setChangePassVisible(false)}>
+            {error ? <Text style={{ color: 'red' }}>{error}</Text> : null}
+            <Pressable style={styles.btn} onPress={() => handleChangePassword()}>
               <Text style={styles.btnText}>Confirm</Text>
             </Pressable>
             <Pressable style={styles.cancelBtn} onPress={() => setChangePassVisible(false)}>

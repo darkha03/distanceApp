@@ -1,17 +1,28 @@
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import { View, TouchableOpacity, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "@/constants/Colors";
 import { AppCard } from "@/components/AppCard";
 import { AppText } from "@/components/AppText";
 import { AppInput } from "@/components/AppInput";
+import { useAuthStore } from "@/store/authStore";
+import { AuthContext } from "@/utils/authContext";
 
 export const ActivityCard = () => {
-  const [selectedActivity, setSelectedActivity] = useState("sleep");
+  const { token } = useAuthStore();
+  const authContext = useContext(AuthContext);
+  if (!authContext?.user) {
+    return null;
+  }
+  const user = authContext.user;
+  const setUser = authContext.setUser;
+  const [selectedActivity, setSelectedActivity] = useState(user.status || "sleep");
   const [thought, setThought] = useState("");
   const [newThought, setNewThought] = useState("");
   const [editing, setEditing] = useState(false);
+  const BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://localhost:4000';
 
+  // Example activities
   const activities = ["sleep", "study", "relax", "playing"];
 
   const handlePostThought = () => {
@@ -23,7 +34,28 @@ export const ActivityCard = () => {
       // For now, we just update the local state
     }
   };
-
+  const handleUpdateActivity = async (activity) => {
+    setSelectedActivity(activity);
+    // Here you could also send the status to a backend or store it
+    try {
+      const res = await fetch(`${BASE_URL}/api/users/status`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ status: activity }),
+      });
+      if (!res.ok) {
+        console.error("Failed to update activity status");
+      }
+      const data = await res.json();
+      setUser({ ...user, status: data.status });
+    }
+    catch (error) {
+      console.error("Error updating activity:", error);
+    }
+  }
   return (
     <AppCard style={styles.card}>
       {/* Row: Left (options) + Right (placeholder image) */}
@@ -37,7 +69,7 @@ export const ActivityCard = () => {
                 styles.optionButton,
                 selectedActivity === activity && styles.selectedOption,
               ]}
-              onPress={() => setSelectedActivity(activity)}
+              onPress={() => handleUpdateActivity(activity)}
             >
               <AppText
                 style={[

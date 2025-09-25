@@ -18,11 +18,12 @@ export const ProfileCard = ({ user }) => {
     location: user.location || "",
     password: "",
   });
+  const BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://localhost:4000';
 
   const handleSave = () => {
     console.log("Profile updated:", form);
     setIsEditing(false);
-    fetch(`http://localhost:4000/api/users/${user.id}`, {
+    fetch(`${BASE_URL}/api/users/${user.id}`, {
         method: "PUT",
         headers: {
             "Content-Type": "application/json",

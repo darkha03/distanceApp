@@ -16,6 +16,7 @@ export default function RegisterScreen() {
   const [confirmPassword, setConfirmPassword] = React.useState("");
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState("");
+  const BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://localhost:4000';
   const router = useRouter();
   const { setToken } = useAuthStore();
   const handleRegister = async () => {
@@ -26,7 +27,7 @@ export default function RegisterScreen() {
       return;
     }
     try {
-      const res = await fetch("http://localhost:4000/api/auth/register", {
+      const res = await fetch(`${BASE_URL}/api/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, email, password, name }),

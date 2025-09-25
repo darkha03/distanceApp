@@ -9,6 +9,7 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import { AuthProvider } from '@/utils/AuthProvider';
 import { SocketProvider } from '@/utils/SocketContext';
 import { PartnerProvider } from '@/utils/PartnerContext';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 export default function TabLayout() {
     const colorScheme = useColorScheme();
@@ -17,6 +18,7 @@ export default function TabLayout() {
       <AuthProvider>
         <SocketProvider>
           <PartnerProvider>
+            <SafeAreaProvider>
             <Tabs
             screenOptions={{
               tabBarActiveTintColor: Colors[colorScheme ?? 'light'].primary,
@@ -46,6 +48,7 @@ export default function TabLayout() {
               }}
             />
             </Tabs>
+            </SafeAreaProvider>
           </PartnerProvider>
         </SocketProvider>
     </AuthProvider>
