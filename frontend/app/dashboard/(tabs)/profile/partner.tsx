@@ -5,6 +5,7 @@ import { AuthContext } from "@/utils/authContext";
 import { AppText } from "@/components/AppText";
 import { Colors } from "@/constants/Colors";
 import { Ionicons } from "@expo/vector-icons";
+import { formatDate } from "@/components/app/DateField";
 
 export default function PartnerScreen() {
   const partnerContext = usePartner();
@@ -16,7 +17,7 @@ export default function PartnerScreen() {
   const authContext = React.useContext(AuthContext);
   if (!authContext?.user) return null;
   const { user } = authContext;
-
+  const BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://localhost:4000';
 
   const handleAddPartner = async () => {
     try {
@@ -44,7 +45,11 @@ export default function PartnerScreen() {
       <View style={styles.avatarWrapper}>
         {/* Replace with actual avatar image if available */}
         <View style={styles.avatarCircle}>
-          <Ionicons name="person-circle" size={120} color={Colors.light.text} />
+          {user.partner?.avatarUrl ? (
+            <Image source={{ uri: `${BASE_URL}${user.partner.avatarUrl}` }} style={styles.avatarImg} />
+          ) : (
+            <Ionicons name="person-circle-outline" size={120} color={Colors.light.text} />
+          )}
         </View>
       </View>
       {/* Username pill */}
@@ -58,11 +63,11 @@ export default function PartnerScreen() {
       {/* Info rows */}
       <View style={styles.infoRow}>
         <AppText style={styles.infoLabel}>Anniversary</AppText>
-        <AppText style={styles.infoValue}>Not set</AppText>
+        <AppText style={styles.infoValue}>{formatDate(user.partner?.anniversary) || formatDate(user.anniversary) || "Not set"}</AppText>
       </View>
       <View style={styles.infoRow}>
         <AppText style={styles.infoLabel}>Birthday</AppText>
-        <AppText style={styles.infoValue}>Not set</AppText>
+        <AppText style={styles.infoValue}>{formatDate(user.partner?.birthday) || "Not set"}</AppText>
       </View>
       <View style={styles.infoRow}>
         <AppText style={styles.infoLabel}>Location</AppText>

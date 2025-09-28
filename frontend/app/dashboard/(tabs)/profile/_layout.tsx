@@ -11,21 +11,21 @@ export default function TabsLayout() {
         }}
       />
       <Stack.Screen
-        name="profile"
+        name="myprofile"
         options={{
-          title: "Profile",
+          title: "Profile Settings",
         }}
       />
       <Stack.Screen
         name="account"
         options={{
-          title: "Account",
+          title: "Account Settings",
         }}
       />
       <Stack.Screen
         name="partner"
         options={{
-          title: "Partner",
+          title: "Partner Settings",
         }}
       />
     </Stack>

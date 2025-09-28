@@ -11,17 +11,28 @@ import {
   getResponseInvite,
   changePassword,
   updateUserStatus,
-  respondActivityImage
+  respondActivityImage,
+  updateAnniversary,
+  uploadAvatar
 } from "../controllers/userController.js";
 import { authMiddleware } from "../middleware/authMiddleware.js";
 
-const uploadDir = path.join(process.cwd(), "uploads", "activity");
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
+const baseUploadDir = path.join(process.cwd(), "uploads");
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const sub = file.fieldname === "avatar" ? "avatars" : "activity";
+    const dest = path.join(baseUploadDir, sub);
+    fs.mkdirSync(dest, { recursive: true });
+    cb(null, dest);
+  },
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname || "").toLowerCase() || ".jpg";
+    cb(null, `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`);
+  }
+});
 
 const upload = multer({
-  dest: uploadDir,
+  storage,
   limits: { fileSize: 2 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     if (!file.mimetype.startsWith("image/")) return cb(new Error("Only images"));
@@ -39,8 +50,15 @@ router.post(
   respondActivityImage
 );
 
-// Update user profile
+router.post(
+  "/avatar",
+  authMiddleware,
+  upload.single("avatar"),
+  uploadAvatar
+);
 
+
+router.put("/anniversary", authMiddleware, updateAnniversary);
 
 router.post("/add-partner", addPartner);
 
@@ -53,6 +71,8 @@ router.get("/respond-invite", getResponseInvite);
 router.post("/password", changePassword);
 
 router.put("/status", updateUserStatus);
+
+
 
 // Get user by ID
 router.get("/:id", getUserProfile);

@@ -14,6 +14,8 @@ type User = {
   status?: string;
   avatarUrl?: string;
   activityImageUrl?: string;
+  birthday?: Date;
+  anniversary?: Date;
   partner?: { name: string;
     status: string; 
     location: string; 
@@ -22,6 +24,8 @@ type User = {
     timezone: string;
     avatarUrl: string;
     activityImageUrl: string;
+    birthday?: Date;
+    anniversary?: Date;
    } | null;
 };
 

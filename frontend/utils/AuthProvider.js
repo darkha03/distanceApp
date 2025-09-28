@@ -23,6 +23,7 @@ export const AuthProvider = ({ children }) => {
         });
         const data = await res.json();
         if (active && res.ok) setUser(data);
+        console.log("Fetched user profile:", user);
       } finally {
         if (active) setLoading(false);
       }

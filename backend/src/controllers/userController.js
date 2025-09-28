@@ -24,7 +24,9 @@ export async function getUserProfile(req, res) {
                 latitude: true,
                 longitude: true,
                 timezone: true,
+                birthday: true,
                 activityImageUrl: true,
+                avatarUrl: true,
                 partner: {
                     select: {
                         name: true,
@@ -33,7 +35,9 @@ export async function getUserProfile(req, res) {
                         latitude: true,
                         longitude: true,
                         timezone: true,
+                        birthday: true,
                         activityImageUrl: true,
+                        avatarUrl: true,
                     }
                 }
             }
@@ -41,7 +45,27 @@ export async function getUserProfile(req, res) {
         if (!user) {
             return res.status(404).json({ error: "User not found" });
         }
-        res.json(user);
+        
+        let anniversary = null;
+        if (user.partnerId) {
+        const invite = await prisma.invite.findFirst({
+            where: {
+            status: "accepted",
+            OR: [
+                { senderId: id },
+                { receiverId: id }
+            ]
+            },
+            select: { anniversary: true }
+        });
+        anniversary = invite?.anniversary || null;
+        }
+
+        // Return combined payload (anniversary is relationship-level)
+        res.json({
+        ...user,
+        anniversary
+        });
     } catch (error) {
         res.status(500).json({ error: error.message || "Something went wrong" });
     }
@@ -52,8 +76,8 @@ export async function getUserProfile(req, res) {
 export async function updateUserProfile(req, res) {
     try {
         const userId = req.user.userId;
-        const { name, location, latitude, longitude, timezone } = req.body;
-        const updateData = { name, location, latitude, longitude, timezone };
+        const { name, birthday, location, latitude, longitude, timezone, avatarUrl } = req.body;
+        const updateData = { name, location, birthday, latitude, longitude, timezone, avatarUrl };
 
         const updatedUser = await prisma.user.update({
             where: { id: userId },
@@ -64,12 +88,14 @@ export async function updateUserProfile(req, res) {
             email: true,
             name: true,
             code: true,
+            birthday: true,
             status: true,
             location: true,
             partnerId: true,
             latitude: true,
             longitude: true,
             timezone: true,
+            avatarUrl: true,
             partner: {
                 select: {
                     name: true,
@@ -78,12 +104,21 @@ export async function updateUserProfile(req, res) {
                     latitude: true,
                     longitude: true,
                     timezone: true,
+                    birthday: true,
+                    activityImageUrl: true,
                 }
             }},
         });
         res.json(updatedUser);
+        const socket = getIO();
+        // Notify partner via WebSocket
+        const user = await prisma.user.findUnique({ where: { id: userId } });
+        if (user.partnerId) {
+            socket.to(user.partnerId).emit("partner:update", updatedUser);
+        }
     } catch (error) {
         res.status(500).json({ error: "Something went wrong" });
+        console.error(error);
     }
 }
 
@@ -353,5 +388,79 @@ export async function respondActivityImage(req, res) {
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: "Upload failed" });
+  }
+}
+
+// UPDATE ANNIVERSARY
+// Return updated invite with anniversary info
+// Anniversary is stored in the invite record when the invite is accepted
+// Emit socket event to the partner with the new anniversary date
+export async function updateAnniversary(req, res) {
+  try {
+    const userId = req.user.userId;
+    const { anniversary } = req.body; // Should be ISO string
+
+    // Find the accepted invite where user is sender or receiver
+    const invite = await prisma.invite.findFirst({
+      where: {
+        OR: [
+          { senderId: userId },
+          { receiverId: userId }
+        ],
+        status: "accepted"
+      }
+    });
+
+    if (!invite) {
+      return res.status(404).json({ error: "No accepted invite found" });
+    }
+
+    // Update anniversary
+    const updated = await prisma.invite.update({
+      where: { id: invite.id },
+      data: { anniversary: anniversary ? new Date(anniversary) : null }
+    });
+
+    res.json(updated);
+    // Notify partner via WebSocket
+    const partnerId = (invite.senderId === userId) ? invite.receiverId : invite.senderId;
+    const io = getIO();
+    io.to(partnerId).emit("partner:anniversary", {
+        userId: userId, 
+        anniversary: updated.anniversary });
+  } catch (error) {
+    res.status(500).json({ error: "Something went wrong" });
+  }
+}
+
+//AVATAR UPLOAD
+export async function uploadAvatar(req, res) {
+  try {
+    if (!req.file) return res.status(400).json({ error: "No image" });
+    const userId = req.user.userId;
+    const relativePath = `/uploads/avatars/${req.file.filename}`;
+    const updated = await prisma.user.update({
+      where: { id: userId },
+      data: { avatarUrl: relativePath },
+      select: {
+        id: true,
+        username: true,
+        avatarUrl: true,
+        partnerId: true
+      }
+    });
+    // Notify partner (merge-friendly partial)
+    if (updated.partnerId) {
+      const io = getIO();
+      io.to(updated.partnerId).emit("partner:update", {
+        id: userId,
+        avatarUrl: relativePath
+      });
+    }
+    res.json({ avatarUrl: relativePath });
+    console.log("Avatar uploaded:", updated);
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "Avatar upload failed" });
   }
 }

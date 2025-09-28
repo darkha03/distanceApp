@@ -3,12 +3,17 @@ import { useAuthStore } from "@/store/authStore";
 import { AuthContext } from "./authContext";
 import { SocketContext } from "./SocketContext";
 
+
 export interface PartnerData {
   id: string;
   username?: string;
   name?: string;
   status?: string;
   location?: string;
+  birthday?: Date;
+  anniversary?: Date;
+  activityImageUrl?: string;
+  avatarUrl?: string;
 }
 
 export interface Invite {
@@ -101,6 +106,15 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
     return data;
   };
 
+  function mergePartner(prev: any, incoming: any) {
+    if (!prev) return incoming;
+    return {
+      ...prev,
+      ...incoming,                 // incoming overwrites only provided keys
+    };
+  }
+
+
   // (Optional) load invites on mount
   useEffect(() => {
     if (token) {
@@ -111,6 +125,24 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   useEffect(() => {
     if (!socket) return;
+
+    const safeSet = setUser;
+
+    const patchPartner = (partial: any) => {
+      safeSet(prev => {
+        if (!prev) return prev;
+        const currentPartnerId = prev.partnerId;
+        // If partial has an id and doesn't match current partner, ignore.
+        if (partial.id && currentPartnerId && String(partial.id) !== String(currentPartnerId)) {
+          return prev;
+        }
+        return {
+          ...prev,
+          partnerId: partial.id || currentPartnerId,
+          partner: mergePartner(prev.partner, partial),
+        };
+      });
+    };
 
     socket.on("partner:invite", (invite) => {
       setInviteRequests(prev => [...prev, invite]);
@@ -131,17 +163,22 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
     });
 
     socket.on("partner:status", ({ partnerId, status }) => {
-      setUser(prev => prev
-        ? prev.partner && prev.partnerId === partnerId
-          ? { ...prev, partner: { ...prev.partner, status } }
-          : prev
-        : prev);
+      patchPartner({ id: partnerId, status });
     });
 
     socket.on("partner:activityImage", ({ userId, activityImageUrl }) => {
+      patchPartner({ id: userId, activityImageUrl });
+    });
+
+    socket.on("partner:update", (partnerData) => {
+      patchPartner(partnerData);
+    });
+
+    socket.on("partner:anniversary", ({userId, anniversary }) => {
+      patchPartner({ id: userId, anniversary  });
       setUser(prev =>
         prev && prev.partner && prev.partnerId === userId
-          ? { ...prev, partner: { ...prev.partner, activityImageUrl } }
+          ? { ...prev, anniversary }
           : prev
       );
     });
@@ -153,6 +190,8 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
       socket.off("partner:removed");
       socket.off("partner:status");
       socket.off("partner:activityImage");
+      socket.off("partner:update");
+      socket.off("partner:anniversary");
     };
   }, [socket, setUser]);
 
