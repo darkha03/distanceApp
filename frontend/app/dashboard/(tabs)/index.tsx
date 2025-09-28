@@ -50,12 +50,15 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
-    backgroundColor: "#4b5563", // will later change dynamically
+    backgroundColor: "#000", // will later change dynamically
     marginTop: 40,
   },
   card: {
     marginBottom: 16,
     backgroundColor: "#000", // dark gray for contrast
+    borderRadius: 18,
+    borderWidth: 5,
+    borderColor: "#c9a4f7", // light purple border
   },
   section: {
     marginTop: 12,

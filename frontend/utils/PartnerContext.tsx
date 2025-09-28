@@ -59,7 +59,7 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
   };
 
   const getInvite = async () => {
-    const res = await fetch("/api/users/add-partner", {
+    const res = await fetch(`${BASE_URL}/api/users/add-partner`, {
       method: "GET",
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -138,11 +138,21 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
         : prev);
     });
 
+    socket.on("partner:activityImage", ({ userId, activityImageUrl }) => {
+      setUser(prev =>
+        prev && prev.partner && prev.partnerId === userId
+          ? { ...prev, partner: { ...prev.partner, activityImageUrl } }
+          : prev
+      );
+    });
+
     return () => {
       socket.off("partner:invite");
       socket.off("partner:accepted");
       socket.off("partner:rejected");
       socket.off("partner:removed");
+      socket.off("partner:status");
+      socket.off("partner:activityImage");
     };
   }, [socket, setUser]);
 

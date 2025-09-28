@@ -21,16 +21,19 @@ model User {
   password  String
   name      String
   code      String   @unique
+  avatarUrl String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  birthday   DateTime?
   status     String?      // nullable so old users don’t break
   location   String?      // nullable
   timezone   String?
   latitude   Float?
   longitude  Float?
   partnerId  String?    @unique      // FK to another user
+  activityImageUrl  String?
 
   partner    User?   @relation("UserPartner", fields: [partnerId], references: [id])
   partnerOf  User?   @relation("UserPartner")
@@ -47,6 +50,7 @@ model Invite {
 
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+  anniversary DateTime?
 
   sender   User @relation("SentInvites", fields: [senderId], references: [id])
   receiver User @relation("ReceivedInvites", fields: [receiverId], references: [id])

@@ -24,6 +24,7 @@ export async function getUserProfile(req, res) {
                 latitude: true,
                 longitude: true,
                 timezone: true,
+                activityImageUrl: true,
                 partner: {
                     select: {
                         name: true,
@@ -32,6 +33,7 @@ export async function getUserProfile(req, res) {
                         latitude: true,
                         longitude: true,
                         timezone: true,
+                        activityImageUrl: true,
                     }
                 }
             }
@@ -280,9 +282,7 @@ export async function updateUserStatus(req, res) {
     try {
         const userId = req.user.userId;
         const { status } = req.body;
-        if (!["sleep", "study", "relax", "playing"].includes(status)) {
-            return res.status(400).json({ error: "Invalid status" });
-        }
+        
         const updatedUser = await prisma.user.update({
             where: { id: userId },
             data: { status },
@@ -314,4 +314,44 @@ export async function updateUserStatus(req, res) {
     } catch (error) {
         res.status(500).json({ error: "Something went wrong" });
     }
+}
+
+// RESPOND TO ACTIVITY IMAGE UPLOAD
+// Return updated user with partner info
+// Emit socket event to the partner with the new activity image URL
+export async function respondActivityImage(req, res) {
+  try {
+    console.log("Received file:", req.file);
+    if (!req.file) return res.status(400).json({ error: "No image" });
+    const userId = req.user.userId;
+    // Build a public URL (for dev you can serve /uploads statically)
+    const relativePath = `/uploads/activity/${req.file.filename}`;
+    const updated = await prisma.user.update({
+      where: { id: userId },
+      data: { activityImageUrl: relativePath },
+      select: {
+        id: true,
+        username: true,
+        status: true,
+        activityImageUrl: true,
+        partnerId: true,
+        partner: {
+          select: { id: true, username: true, status: true, activityImageUrl: true }
+        }
+      }
+    });
+
+    if (updated.partnerId) {
+      const io = getIO();
+      io.to(updated.partnerId).emit("partner:activityImage", {
+        userId,
+        activityImageUrl: relativePath
+      });
+    }
+
+    res.json(updated);
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "Upload failed" });
+  }
 }

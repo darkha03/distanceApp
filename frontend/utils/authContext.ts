@@ -11,7 +11,18 @@ type User = {
   latitude?: number | null;
   longitude?: number | null;
   timezone?: string;
-  partner?: { name: string; status: string; location: string; latitude: number; longitude: number; timezone: string } | null;
+  status?: string;
+  avatarUrl?: string;
+  activityImageUrl?: string;
+  partner?: { name: string;
+    status: string; 
+    location: string; 
+    latitude: number; 
+    longitude: number; 
+    timezone: string;
+    avatarUrl: string;
+    activityImageUrl: string;
+   } | null;
 };
 
 type AuthContextType = {

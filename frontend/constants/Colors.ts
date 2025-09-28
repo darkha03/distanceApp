@@ -10,7 +10,7 @@ export const Colors = {
   light: {
     background: "#000000", // Black
     text: "#FFFFFF",       // White
-    primary: "#8A2BE2",    // Purple (tabs, icons, highlights)
+    primary: "#c9a4f7",    // Purple (tabs, icons, highlights)
     secondary: "#CCCCCC",  // Light gray
     border: "#333333",     // Dark gray for input borders
     success: "#4CAF50",    // Green (optional)

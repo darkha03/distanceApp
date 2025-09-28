@@ -97,10 +97,6 @@ export default function RegisterScreen() {
       <TouchableOpacity style={{ marginTop: 16 }} onPress={() => router.push("/auth/login")}>
         <AppText style={{ color: Colors.light.primary }}>Already have an account? Login</AppText>
       </TouchableOpacity>
-      <View style={{ height: 20 }} />
-      {/* Temporary navigation button to Dashboard */}
-      <AppText style={{ marginBottom: 8 }}>For testing purposes:</AppText>
-      <Button title="Register → Dashboard" onPress={() => router.push("/dashboard")} />
     </View>
   );
 }

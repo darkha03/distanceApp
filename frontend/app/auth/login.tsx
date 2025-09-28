@@ -73,10 +73,6 @@ export default function LoginScreen() {
       <TouchableOpacity style={{ marginTop: 16 }} onPress={() => router.push("/auth/register")}>
         <AppText style={{ color: Colors.light.primary }}>Don't have an account? Register</AppText>
       </TouchableOpacity>
-      <View style={{ height: 20 }} />
-      {/* Temporary navigation button to Dashboard */}
-      <AppText style={{ marginBottom: 8 }}>For testing purposes:</AppText>
-      <Button title="Login → Dashboard" onPress={() => router.push("/dashboard")} />
     </View>
   );
 }

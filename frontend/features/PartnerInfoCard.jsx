@@ -6,6 +6,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { AuthContext } from "@/utils/authContext";
 import { Colors } from "@/constants/Colors";
 import { weatherCodeIconMap } from "@/utils/weatherCodes";
+import { statusImageMap } from "@/utils/statusImage";
 
 export function PartnerInfoCard() {
   const [expanded, setExpanded] = useState(false);
@@ -15,12 +16,13 @@ export function PartnerInfoCard() {
   }
   const user = authContext.user;
   const partner = user.partner;
-  
+  const BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://localhost:4000';
   const partnerTz = partner.timezone || "UTC";
 
   const [partnerTime, setPartnerTime] = useState("");
   const [partnerDate, setPartnerDate] = useState("");
-    const [weather, setWeather] = useState(null);
+  const [weather, setWeather] = useState(null);
+  const [showActivityImage, setShowActivityImage] = useState(true);
 
   useEffect(() => {
     const update = () => {
@@ -63,62 +65,121 @@ export function PartnerInfoCard() {
     };
   }, [partnerTz]);
   useEffect(() => {
-    // Only fetch if coordinates exist
-    if (partner.latitude && partner.longitude) {
-      const fetchWeather = async () => {
+    let intervalId;
+    const fetchWeather = async () => {
+      if (partner.latitude && partner.longitude) {
         try {
-          // Replace with your weather API endpoint and key
           const res = await fetch(
             `https://api.open-meteo.com/v1/forecast?latitude=${partner.latitude}&longitude=${partner.longitude}&current_weather=true`
           );
           const data = await res.json();
-          setWeather(data.current_weather); // adjust based on API response shape
+          setWeather(data.current_weather);
         } catch (e) {
           setWeather(null);
         }
-      };
-      fetchWeather();
-    }
+      }
+    };
+    fetchWeather();
+    intervalId = setInterval(fetchWeather, 15 * 60 * 1000); // every 15 minutes
+
+    return () => {
+      clearInterval(intervalId);
+    };
   }, [partner.latitude, partner.longitude]);
  
+  // Dummy forecast for mockup (replace with real API if needed)
+  const forecast = [
+    { code: weather?.weathercode, temp: weather?.temperature },
+    { code: weather?.weathercode, temp: weather?.temperature },
+  ];
+
   return (
     <AppCard style={styles.card}>
-      {/* Date + Time */}
-      <View style={styles.centered}>
+      {/* Top row: Date only */}
+      <View style={styles.dateRow}>
         <AppText style={styles.day}>{partnerDate}</AppText>
-        <View style={styles.timeRow}>
-            <View>
-                <AppText style={styles.time}>{partnerTime}</AppText>
-            </View>
-            <View style={{ flex: 1, alignItems: "center" }}>
-                <Ionicons 
-                name="person-circle-outline"
-                size={72}
-                color="#888" // placeholder gray        
-                />
-                {/* Display partner status */}
-                <AppText style={styles.status}>{partner.status || "Sleep"}</AppText>
-            </View>
-        </View>
       </View>
+      {/* Second row: Time, Status (left) + Avatar (right) */}
+      <View style={styles.infoRow}>
 
+        <View style={styles.leftInfo}>
+          <View style={{ height: 80, width:"100%", alignItems: "center" }} >
+          <AppText style={styles.time}>{partnerTime}</AppText>
+          </View>
+          <View style={{ height: 40, width:"100%", alignItems: "center" }}>
+          <AppText style={styles.status}>{partner.status || "Sleep"}</AppText>
+          </View>
+        </View>
+
+        <View style={{ flex: 1, alignItems: "center", position: "relative" }}>
+          {/* Avatar or Status Image */}
+          {partner.activityImageUrl && showActivityImage ? (
+            <Image
+              source={{ uri: `${BASE_URL}${partner.activityImageUrl}` }}
+              style={{ width: 120, height: 120, borderRadius: 10 }}
+            />
+          ) : statusImageMap[partner.status] ? (
+            <Image
+              source={statusImageMap[partner.status]}
+              style={{ width: 120, height: 120, borderRadius: 10 }}
+              resizeMode="contain"
+            />
+          ) : (
+            <Ionicons
+              name="person-circle-outline"
+              size={120}
+              color="#c9a4f7"
+              style={styles.avatar}
+            />
+          )}
+          {/* Swap button */}
+          {(partner.activityImageUrl && statusImageMap[partner.status]) && (
+            <TouchableOpacity
+              style={styles.swapImageButton}
+              onPress={() => setShowActivityImage((prev) => !prev)}
+            >
+              <Ionicons name="swap-horizontal-outline" size={20} color="#c9a4f7" />
+            </TouchableOpacity>
+          )}
+        </View>
+
+      </View>
+      
       {/* Expandable Section */}
       {expanded && (
+        
         <View style={styles.moreInfo}>
-          <AppText style={styles.label}>Weather: 
-            <Ionicons
-              name={weatherCodeIconMap[weather?.weathercode] || "help-circle-outline"}
-              size={24}
-              color="#f4f8fbff"
-              style={{ verticalAlign: "middle",  paddingRight: 4 , paddingLeft: 8}}
-            />
-             {weather 
-            ? `${weather.temperature}°C` || "Unknown"
-             : "Loading..."}</AppText>
+          {/* Third row: Weather box (left), Forecast (right) */}
+      <View style={styles.weatherRow}>
+        <View style={styles.weatherBox}>
+          <Ionicons
+            name={weatherCodeIconMap[weather?.weathercode] || "help-circle-outline"}
+            size={82}
+            color="#c9a4f7"
+            style={styles.weatherIconBox}
+          />
+          <AppText style={styles.weatherTempBox}>
+            {weather ? `${weather.temperature}°C` : "--"}
+          </AppText>
+        </View>
+        <View style={styles.forecastRow}>
+          {forecast.map((f, i) => (
+            <View key={i} style={styles.forecastBox}>
+              <Ionicons
+                name={weatherCodeIconMap[f.code] || "help-circle-outline"}
+                size={24}
+                color="#c9a4f7"
+              />
+              <AppText style={styles.forecastTemp}>
+                {f.temp ? `${f.temp}°` : "--"}
+              </AppText>
+            </View>
+          ))}
+        </View>
+      </View>
           <AppText style={styles.label}>Timezone: {partner.timezone}</AppText>
         </View>
       )}
-
       {/* Expand/Collapse Arrow */}
       <TouchableOpacity
         style={styles.arrowContainer}
@@ -133,43 +194,110 @@ export function PartnerInfoCard() {
 const styles = StyleSheet.create({
   card: {
     marginBottom: 16,
+    borderWidth: 5,
+    borderColor: "#c9a4f7",
+    borderRadius: 18,
+    backgroundColor: "#111",
+    padding: 18,
+    shadowColor: "#c9a4f7",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
   },
-  centered: {
-   width: "100%",
+  dateRow: {
+    marginBottom: 8,
+    alignItems: "flex-start",
   },
   day: {
     fontSize: 16,
     fontWeight: "600",
     color: "#aaa",
-    marginBottom: 4,
   },
-  timeRow: {
+  infoRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
-    width: "100%",
+    justifyContent: "space-between",
+    marginBottom: 8,
+  },
+  leftInfo: {
+    flexDirection: "column",
+    justifyContent: "center",
+    alignItems: "center", // <-- add this
+    flex: 1,
   },
   time: {
-    fontSize: 64,
+    fontSize: 48,
     fontWeight: "700",
     color: "#fff",
     textAlign: "left",
-  },
-  activityImage: {
-    width: 48,
-    height: 48,
-    marginLeft: 12,
+    marginBottom: 4,
   },
   status: {
     fontSize: 18,
     fontWeight: "500",
-    color: Colors.light.secondary,
+    color: Colors.light.text,
     backgroundColor: Colors.light.primary,
     paddingVertical: 4,
-    paddingHorizontal: 12,
+    paddingHorizontal: 18,
     borderRadius: 20,
     marginTop: 8,
     textTransform: "capitalize",
+    alignSelf: "center",
+  },
+  avatar: {
+    marginLeft: 12,
+  },
+  weatherRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    marginTop: 8,
+    marginBottom: 8,
+  },
+  weatherBox: {
+    backgroundColor: "#222",
+    borderRadius: 12,
+    padding: 12,
+    minWidth: 150,
+    minHeight: 120,
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginRight: 12,
+    position: "relative",
+  },
+  weatherIconBox: {
+    position: "absolute",
+    top: 0,
+    right: 8,
+  },
+  weatherTempBox: {
+    position: "absolute",
+    bottom: 8,
+    left: 12,
+    fontSize: 22,
+    color: "#fff",
+    fontWeight: "600",
+  },
+  forecastRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "center",
+    gap: 8,
+    marginLeft: 12,
+    flex: 1,
+  },
+  forecastBox: {
+    backgroundColor: "#222",
+    borderRadius: 12,
+    padding: 8,
+    alignItems: "center",
+    minWidth: 48,
+    marginHorizontal: 2,
+  },
+  forecastTemp: {
+    fontSize: 16,
+    color: "#fff",
+    fontWeight: "500",
+    marginTop: 2,
   },
   moreInfo: {
     marginTop: 16,
@@ -186,7 +314,17 @@ const styles = StyleSheet.create({
   },
   arrow: {
     fontSize: 20,
-    color: "#a78bfa", // purple accent
+    color: "#a78bfa",
     fontWeight: "600",
   },
+  swapImageButton: {
+    position: "absolute",
+    bottom: 8,
+    right: 8,
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    padding: 4,
+    elevation: 2,
+  },
+
 });

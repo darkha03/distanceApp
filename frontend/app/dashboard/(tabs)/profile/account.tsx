@@ -1,7 +1,9 @@
 import React, { useState } from "react";
-import { View, Text, StyleSheet, Button, Modal, TextInput, Pressable } from "react-native";
+import { View, StyleSheet, Modal, TextInput, Pressable } from "react-native";
 import { AuthContext } from "@/utils/authContext";
 import { useAuthStore } from "@/store/authStore";
+import { Colors } from "@/constants/Colors";
+import { AppText } from "@/components/AppText";
 
 export default function AccountScreen() {
   const [changePassVisible, setChangePassVisible] = useState(false);
@@ -55,30 +57,30 @@ export default function AccountScreen() {
       {/* Table */}
       <View style={styles.table}>
         <View style={styles.row}>
-          <Text style={styles.label}>Email:</Text>
-          <Text style={styles.value}>{user.email}</Text>
+          <AppText style={styles.label}>Email:</AppText>
+          <AppText style={styles.value}>{user.email}</AppText>
         </View>
         <View style={styles.row}>
-          <Text style={styles.label}>Username:</Text>
-          <Text style={styles.value}>{user.username}</Text>
+          <AppText style={styles.label}>Username:</AppText>
+          <AppText style={styles.value}>{user.username}</AppText>
         </View>
       </View>
 
       {/* Change Password Button */}
       <Pressable style={styles.btn} onPress={() => setChangePassVisible(true)}>
-        <Text style={styles.btnText}>Change Password</Text>
+        <AppText style={styles.btnText}>Change Password</AppText>
       </Pressable>
 
       {/* Delete Account Button */}
       <Pressable style={[styles.btn, styles.deleteBtn]} onPress={() => setDeleteVisible(true)}>
-        <Text style={styles.btnText}>Delete Account</Text>
+        <AppText style={styles.btnText}>Delete Account</AppText>
       </Pressable>
 
       {/* Change Password Modal */}
       <Modal transparent visible={changePassVisible} animationType="slide">
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Change Password</Text>
+            <AppText style={styles.modalTitle}>Change Password</AppText>
             <TextInput
               style={styles.input}
               placeholder="New Password"
@@ -93,12 +95,12 @@ export default function AccountScreen() {
               value={confirmPassword}
               onChangeText={setConfirmPassword}
             />
-            {error ? <Text style={{ color: 'red' }}>{error}</Text> : null}
+            {error ? <AppText style={{ color: 'red' }}>{error}</AppText> : null}
             <Pressable style={styles.btn} onPress={() => handleChangePassword()}>
-              <Text style={styles.btnText}>Confirm</Text>
+              <AppText style={styles.btnText}>Confirm</AppText>
             </Pressable>
             <Pressable style={styles.cancelBtn} onPress={() => setChangePassVisible(false)}>
-              <Text style={styles.cancelText}>Cancel</Text>
+              <AppText style={styles.cancelText}>Cancel</AppText>
             </Pressable>
           </View>
         </View>
@@ -108,12 +110,12 @@ export default function AccountScreen() {
       <Modal transparent visible={deleteVisible} animationType="fade">
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Are you sure you want to delete your account?</Text>
+            <AppText style={styles.modalTitle}>Are you sure you want to delete your account?</AppText>
             <Pressable style={styles.btn} onPress={() => setDeleteVisible(false)}>
-              <Text style={styles.btnText}>Yes, Delete</Text>
+              <AppText style={styles.btnText}>Yes, Delete</AppText>
             </Pressable>
             <Pressable style={styles.cancelBtn} onPress={() => setDeleteVisible(false)}>
-              <Text style={styles.cancelText}>Cancel</Text>
+              <AppText style={styles.cancelText}>Cancel</AppText>
             </Pressable>
           </View>
         </View>
@@ -128,12 +130,12 @@ const styles = StyleSheet.create({
     justifyContent: "center", // center vertically
     alignItems: "center", // center horizontally
     padding: 20,
-    backgroundColor: "#fff",
+    backgroundColor: Colors.light.background,
   },
   table: {
     width: "100%",
     borderWidth: 1,
-    borderColor: "#ccc",
+    borderColor: Colors.light.border,
     marginBottom: 20,
     borderRadius: 8,
     overflow: "hidden",
@@ -143,16 +145,16 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     padding: 15,
     borderBottomWidth: 1,
-    borderBottomColor: "#eee",
+    borderBottomColor: Colors.light.border,
   },
   label: {
     fontWeight: "bold",
   },
   value: {
-    color: "#333",
+    color: Colors.light.text,
   },
   btn: {
-    backgroundColor: "#007bff",
+    backgroundColor: Colors.light.primary,
     padding: 12,
     borderRadius: 8,
     marginTop: 10,
@@ -160,10 +162,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   deleteBtn: {
-    backgroundColor: "#dc3545",
+    backgroundColor: Colors.light.danger,
   },
   btnText: {
-    color: "#fff",
+    color: Colors.light.text,
     fontWeight: "bold",
   },
   modalContainer: {
@@ -173,7 +175,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   modalContent: {
-    backgroundColor: "#fff",
+    backgroundColor: Colors.light.background,
     padding: 20,
     borderRadius: 12,
     width: "80%",
@@ -186,16 +188,23 @@ const styles = StyleSheet.create({
   },
   input: {
     borderWidth: 1,
-    borderColor: "#ccc",
+    borderColor: Colors.light.border,
     borderRadius: 8,
     padding: 10,
     width: "100%",
     marginBottom: 10,
+    color: Colors.light.text,
   },
   cancelBtn: {
+    backgroundColor: Colors.light.secondary,
+    padding: 12,
+    borderRadius: 8,
     marginTop: 10,
+    width: "100%",
+    alignItems: "center",
   },
   cancelText: {
-    color: "#555",
+    color: Colors.light.text,
+    fontWeight: "bold",
   },
 });

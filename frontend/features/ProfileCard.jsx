@@ -130,6 +130,9 @@ export const ProfileCard = ({ user }) => {
 const styles = StyleSheet.create({
   card: {
     padding: 16,
+    borderRadius: 18,
+    borderWidth: 5,
+    borderColor: Colors.light.primary,
   },
   label: {
     fontSize: 14,

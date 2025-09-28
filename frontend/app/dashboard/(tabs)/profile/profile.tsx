@@ -1,8 +1,10 @@
 import React, { useState } from "react";
-import { View, Text, StyleSheet, TextInput, Pressable, Image } from "react-native";
+import { View, StyleSheet, TextInput, Pressable, Image } from "react-native";
 import { AuthContext } from "@/utils/authContext";
 import { useAuthStore } from "@/store/authStore";
 import * as Location from "expo-location";
+import { AppText } from "@/components/AppText";
+import { Colors } from "@/constants/Colors";
 
 export default function ProfileScreen() {
   const [editMode, setEditMode] = useState(false);
@@ -95,40 +97,40 @@ export default function ProfileScreen() {
     <View style={styles.container}>
       {message !== "" && (
         <View style={styles.messageBox}>
-          <Text style={styles.messageText}>{message}</Text>
+          <AppText style={styles.messageText}>{message}</AppText>
         </View>
       )}
       <View style={styles.table}>
         <View style={styles.row}>
-          <Text style={styles.label}>Avatar:</Text>
+          <AppText style={styles.label}>Avatar:</AppText>
           <Image source={{ uri: avatar }} style={styles.avatar} />
         </View>
         <View style={styles.row}>
-          <Text style={styles.label}>Name:</Text>
+          <AppText style={styles.label}>Name:</AppText>
           {editMode ? (
             <TextInput
               style={styles.input}
               value={form.name}
-              onChangeText={(text) => setForm({ ...form, name: text })}
+              onChangeText={(AppText) => setForm({ ...form, name: AppText })}
             />
           ) : (
-            <Text style={styles.value}>{form.name}</Text>
+            <AppText style={styles.value}>{form.name}</AppText>
           )}
         </View>
         <View style={styles.row}>
-          <Text style={styles.label}>Location:</Text>
+          <AppText style={styles.label}>Location:</AppText>
           {editMode ? (
             <TextInput
               style={styles.input}
               value={form.location}
-              onChangeText= {(text) => setForm({ ...form, location: text })}
+              onChangeText= {(AppText) => setForm({ ...form, location: AppText })}
             />
           ) : (
-            <Text style={styles.value}>{user.location || "Not set"}</Text>
+            <AppText style={styles.value}>{user.location || "Not set"}</AppText>
           )}
         </View>
         <View className="row" style={styles.row}>
-          <Text style={styles.label}>Timezone:</Text>
+          <AppText style={styles.label}>Timezone:</AppText>
           {editMode ? (
             <TextInput
               style={styles.input}
@@ -137,40 +139,40 @@ export default function ProfileScreen() {
               placeholder="e.g. Europe/Paris"
             />
           ) : (
-            <Text style={styles.value}>{user.timezone || form.timezone || "Not set"}</Text>
+            <AppText style={styles.value}>{user.timezone || form.timezone || "Not set"}</AppText>
           )}
         </View>
         {editMode && (
           <View style={styles.row}>
-            <Text style={styles.label}>Coords:</Text>
-            <Text style={styles.value}>
+            <AppText style={styles.label}>Coordinates:</AppText>
+            <AppText style={styles.value}>
               {form.latitude && form.longitude
                 ? `${form.latitude.toFixed(3)}, ${form.longitude.toFixed(3)}`
                 : "Not set"}
-            </Text>
+            </AppText>
           </View>
         )}
       </View>
       {editMode && (
         <Pressable style={[styles.btn, { backgroundColor: "#17a2b8" }]} onPress={useDeviceLocation} disabled={locLoading}>
-          <Text style={styles.btnText}>{locLoading ? "Locating..." : "Use Device Location"}</Text>
+          <AppText style={styles.btnText}>{locLoading ? "Locating..." : "Use Device Location"}</AppText>
         </Pressable>
       )}
 
       {!editMode ? (
         <Pressable style={styles.btn} onPress={() => setEditMode(true)}>
-          <Text style={styles.btnText}>Edit</Text>
+          <AppText style={styles.btnText}>Edit</AppText>
         </Pressable>
       ) : (
         <View style={styles.editActions}>
           <Pressable style={styles.btn} onPress={handleSave}>
-            <Text style={styles.btnText}>Save</Text>
+            <AppText style={styles.btnText}>Save</AppText>
           </Pressable>
           <Pressable
             style={[styles.btn, styles.cancelBtn]}
             onPress={() => setEditMode(false)}
           >
-            <Text style={styles.btnText}>Cancel</Text>
+            <AppText style={styles.btnText}>Cancel</AppText>
           </Pressable>
         </View>
       )}
@@ -184,28 +186,28 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     padding: 20,
-    backgroundColor: "#fff",
+    backgroundColor: Colors.light.background,
   },
   messageBox: {
     position: "absolute",
     top: 30,
     left: 0,
     right: 0,
-    backgroundColor: "#28a745",
+    backgroundColor: Colors.light.success,
     padding: 12,
     borderRadius: 8,
     alignItems: "center",
     zIndex: 10,
   },
   messageText: {
-    color: "#fff",
+    color: Colors.light.text,
     fontWeight: "bold",
     fontSize: 16,
   },
   table: {
     width: "100%",
     borderWidth: 1,
-    borderColor: "#ccc",
+    borderColor: Colors.light.border,
     marginBottom: 20,
     borderRadius: 8,
     overflow: "hidden",
@@ -215,14 +217,14 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     padding: 15,
     borderBottomWidth: 1,
-    borderBottomColor: "#eee",
+    borderBottomColor: Colors.light.border,
     alignItems: "center",
   },
   label: {
     fontWeight: "bold",
   },
   value: {
-    color: "#333",
+    color: Colors.light.text,
   },
   avatar: {
     width: 60,
@@ -231,14 +233,15 @@ const styles = StyleSheet.create({
   },
   input: {
     borderWidth: 1,
-    borderColor: "#ccc",
+    borderColor: Colors.light.border,
     borderRadius: 6,
     padding: 8,
     width: 150,
     textAlign: "right",
+    color: Colors.light.text,
   },
   btn: {
-    backgroundColor: "#007bff",
+    backgroundColor: Colors.light.primary,
     padding: 12,
     borderRadius: 8,
     marginTop: 10,
@@ -246,10 +249,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   cancelBtn: {
-    backgroundColor: "#6c757d",
+    backgroundColor: Colors.light.secondary,
   },
   btnText: {
-    color: "#fff",
+    color: Colors.light.text,
     fontWeight: "bold",
   },
   editActions: {

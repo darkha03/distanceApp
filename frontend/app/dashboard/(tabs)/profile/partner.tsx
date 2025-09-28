@@ -1,7 +1,10 @@
 import React, { useState } from "react";
-import { View, Text, StyleSheet, Pressable, Modal, TextInput } from "react-native";
+import { View, StyleSheet, Pressable, Modal, TextInput, Image } from "react-native";
 import { usePartner } from "@/utils/PartnerContext";
 import { AuthContext } from "@/utils/authContext";
+import { AppText } from "@/components/AppText";
+import { Colors } from "@/constants/Colors";
+import { Ionicons } from "@expo/vector-icons";
 
 export default function PartnerScreen() {
   const partnerContext = usePartner();
@@ -13,6 +16,7 @@ export default function PartnerScreen() {
   const authContext = React.useContext(AuthContext);
   if (!authContext?.user) return null;
   const { user } = authContext;
+
 
   const handleAddPartner = async () => {
     try {
@@ -36,60 +40,74 @@ export default function PartnerScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.table}>
-        <View style={styles.row}>
-          <Text style={styles.label}>Partner:</Text>
-            <Text style={styles.value}>{user.partner ? user.partner.name : "No partner"}</Text>
-        </View>
-        <View style={styles.row}>
-          <Text style={styles.label}>Status:</Text>
-          <Text style={styles.value}>{user.partner?.status || "Not set"}</Text>
-        </View>
-        <View style={styles.row}>
-          <Text style={styles.label}>Location:</Text>
-          <Text style={styles.value}>{user.partner?.location || "Not set"}</Text>
+      {/* Avatar */}
+      <View style={styles.avatarWrapper}>
+        {/* Replace with actual avatar image if available */}
+        <View style={styles.avatarCircle}>
+          <Ionicons name="person-circle" size={120} color={Colors.light.text} />
         </View>
       </View>
-
+      {/* Username pill */}
+      <View style={styles.pill}>
+        <AppText style={styles.pillText}>{user.partner ? user.partner.name : "Username"}</AppText>
+      </View>
+      {/* Status pill */}
+      <View style={styles.pillSmall}>
+        <AppText style={styles.pillText}>{user.partner?.status || "Status"}</AppText>
+      </View>
+      {/* Info rows */}
+      <View style={styles.infoRow}>
+        <AppText style={styles.infoLabel}>Anniversary</AppText>
+        <AppText style={styles.infoValue}>Not set</AppText>
+      </View>
+      <View style={styles.infoRow}>
+        <AppText style={styles.infoLabel}>Birthday</AppText>
+        <AppText style={styles.infoValue}>Not set</AppText>
+      </View>
+      <View style={styles.infoRow}>
+        <AppText style={styles.infoLabel}>Location</AppText>
+        <AppText style={styles.infoValue}>{user.partner?.location || "Not set"}</AppText>
+      </View>
+      {/* Button */}
       {!user.partner ? (
-        <Pressable style={styles.btn} onPress={() => setShowAddModal(true)}>
-          <Text style={styles.btnText}>Add Partner</Text>
+        <Pressable style={styles.addBtn} onPress={() => setShowAddModal(true)}>
+          <AppText style={styles.addBtnText}>Add Partner</AppText>
         </Pressable>
       ) : (
-        <Pressable style={[styles.btn, styles.removeBtn]} onPress={() => setShowRemoveModal(true)}>
-          <Text style={styles.btnText}>Remove Partner</Text>
+        <Pressable style={styles.addBtn} onPress={() => setShowRemoveModal(true)}>
+          <AppText style={styles.addBtnText}>Remove Partner</AppText>
         </Pressable>
       )}
 
+      {/* Modals unchanged */}
       <Modal visible={showAddModal} animationType="slide" transparent onRequestClose={() => setShowAddModal(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Enter Partner Code</Text>
+            <AppText style={styles.modalTitle}>Enter Partner Code</AppText>
             <TextInput
               style={styles.input}
               placeholder="Partner Code"
               value={partnerCode}
               onChangeText={setPartnerCode}
             />
-            <Pressable style={styles.btn} onPress={handleAddPartner}>
-              <Text style={styles.btnText}>Add</Text>
+            <Pressable style={styles.addBtn} onPress={handleAddPartner}>
+              <AppText style={styles.addBtnText}>Add</AppText>
             </Pressable>
-            <Pressable style={[styles.btn, styles.cancelBtn]} onPress={() => setShowAddModal(false)}>
-              <Text style={styles.btnText}>Cancel</Text>
+            <Pressable style={[styles.addBtn, styles.cancelBtn]} onPress={() => setShowAddModal(false)}>
+              <AppText style={styles.addBtnText}>Cancel</AppText>
             </Pressable>
           </View>
         </View>
       </Modal>
-
       <Modal visible={showRemoveModal} animationType="fade" transparent onRequestClose={() => setShowRemoveModal(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Are you sure?</Text>
-            <Pressable style={styles.btn} onPress={handleRemovePartner}>
-              <Text style={styles.btnText}>Yes, Remove</Text>
+            <AppText style={styles.modalTitle}>Are you sure?</AppText>
+            <Pressable style={styles.addBtn} onPress={handleRemovePartner}>
+              <AppText style={styles.addBtnText}>Yes, Remove</AppText>
             </Pressable>
-            <Pressable style={[styles.btn, styles.cancelBtn]} onPress={() => setShowRemoveModal(false)}>
-              <Text style={styles.btnText}>Cancel</Text>
+            <Pressable style={[styles.addBtn, styles.cancelBtn]} onPress={() => setShowRemoveModal(false)}>
+              <AppText style={styles.addBtnText}>Cancel</AppText>
             </Pressable>
           </View>
         </View>
@@ -101,45 +119,91 @@ export default function PartnerScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    alignItems: "center",
+    paddingTop: 40,
+    backgroundColor: "#000",
+  },
+  avatarWrapper: {
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  avatarCircle: {
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    borderWidth: 6,
+    borderColor: "#c9a4f7",
+    backgroundColor: "#ddd",
     justifyContent: "center",
     alignItems: "center",
-    padding: 20,
-    backgroundColor: "#fff",
   },
-  table: {
-    width: "100%",
-    borderWidth: 1,
-    borderColor: "#ccc",
-    marginBottom: 20,
-    borderRadius: 8,
-    overflow: "hidden",
+  avatarImg: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
   },
-  row: {
+  pill: {
+    backgroundColor: "#c9a4f7",
+    borderRadius: 16,
+    paddingVertical: 8,
+    paddingHorizontal: 32,
+    marginBottom: 8,
+    alignSelf: "center",
+  },
+  pillSmall: {
+    backgroundColor: "#c9a4f7",
+    borderRadius: 16,
+    paddingVertical: 6,
+    paddingHorizontal: 24,
+    marginBottom: 24,
+    alignSelf: "center",
+  },
+  pillText: {
+    color: "#222",
+    fontWeight: "bold",
+    fontSize: 16,
+    textAlign: "center",
+  },
+  infoRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    padding: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: "#eee",
-  },
-  label: { fontWeight: "bold" },
-  value: { color: "#333" },
-  btn: {
-    backgroundColor: "#007bff",
-    padding: 12,
-    borderRadius: 8,
-    marginTop: 10,
-    width: "100%",
     alignItems: "center",
+    width: 260,
+    borderWidth: 2,
+    borderColor: "#c9a4f7",
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    marginBottom: 12,
+    backgroundColor: "#111",
   },
-  removeBtn: {
-    backgroundColor: "#dc3545",
+  infoLabel: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 15,
+  },
+  infoValue: {
+    color: "#fff",
+    fontSize: 15,
+  },
+  addBtn: {
+    backgroundColor: "#f48ca3",
+    borderRadius: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 32,
+    marginTop: 32,
+    width: 220,
+    alignItems: "center",
+    alignSelf: "center",
+  },
+  addBtnText: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 16,
   },
   cancelBtn: {
     backgroundColor: "#6c757d",
-  },
-  btnText: {
-    color: "#fff",
-    fontWeight: "bold",
+    marginTop: 10,
   },
   modalOverlay: {
     flex: 1,
@@ -149,7 +213,7 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     width: "80%",
-    backgroundColor: "#fff",
+    backgroundColor: "#222",
     padding: 20,
     borderRadius: 10,
   },
@@ -158,6 +222,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginBottom: 15,
     textAlign: "center",
+    color: "#fff",
   },
   input: {
     borderWidth: 1,
@@ -165,5 +230,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     padding: 8,
     marginBottom: 15,
+    backgroundColor: "#fff",
+    color: "#222",
   },
 });
