@@ -5,6 +5,7 @@ import express from "express";
 import {
   getUserProfile,
   updateUserProfile,
+  deleteUserProfile,
   addPartner,
   getInvite,
   respondInvite,
@@ -78,5 +79,7 @@ router.put("/status", updateUserStatus);
 router.get("/:id", getUserProfile);
 
 router.put("/:id", updateUserProfile);
+
+router.delete("/:id", deleteUserProfile);
 
 export default router;

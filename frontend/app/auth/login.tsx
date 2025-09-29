@@ -6,13 +6,15 @@ import { useAuthStore } from "@/store/authStore";
 import { saveToken } from "@/utils/storage";
 import { useRouter } from "expo-router";
 import * as React from "react";
-import { Button, TouchableOpacity, View, ActivityIndicator } from "react-native";
+import { Pressable, TouchableOpacity, View, ActivityIndicator } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 
 export default function LoginScreen() {
   const [username, setUsername] = React.useState("");
   const [password, setPassword] = React.useState("");
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState("");
+  const [showPassword, setShowPassword] = React.useState(false);
   const { setToken } = useAuthStore();
   const router = useRouter();
   const BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://localhost:4000';
@@ -49,13 +51,33 @@ export default function LoginScreen() {
         value={username}
         onChangeText={setUsername}
       />
-      <AppInput
-        placeholder="Password" 
-        style={{ width: 200, marginBottom: 12 }}
-        secureTextEntry
-        value={password}
-        onChangeText={setPassword}
-      />
+      <View style={{ width: 200, marginBottom: 12, position: "relative" }}>
+        <AppInput
+          placeholder="Password"
+          style={{ paddingRight: 40 }}
+          secureTextEntry={!showPassword}
+          value={password}
+          onChangeText={setPassword}
+        />
+        <Pressable
+          onPress={() => setShowPassword(v => !v)}
+          style={{
+            position: "absolute",
+            right: 8,
+            top: 0,
+            height: "100%",
+            justifyContent: "center",
+            padding: 6,
+            zIndex: 2,
+          }}
+        >
+          <Ionicons
+            name={showPassword ? "eye-off-outline" : "eye-outline"}
+            size={22}
+            color="#fff"
+          />
+        </Pressable>
+      </View>
       <AppButton 
         title="Login" 
         onPress={() => {

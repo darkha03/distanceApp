@@ -1,6 +1,8 @@
 import { PrismaClient } from "../generated/prisma/client.js";
 import { getIO } from "../utils/socket.js";
 import { hashPassword } from "../utils/hash.js";
+import fs from "fs";
+import path from "path";
 
 const prisma = new PrismaClient();
 
@@ -116,6 +118,36 @@ export async function updateUserProfile(req, res) {
         if (user.partnerId) {
             socket.to(user.partnerId).emit("partner:update", updatedUser);
         }
+    } catch (error) {
+        res.status(500).json({ error: "Something went wrong" });
+        console.error(error);
+    }
+}
+
+//DELETE USER PROFILE
+export async function deleteUserProfile(req, res) {
+    try{
+        const userId = req.user.userId;
+        // Delete invites where user is sender or receiver
+        await prisma.invite.deleteMany({
+            where: {
+                OR: [ { senderId: userId }, { receiverId: userId } ]
+            }
+        });
+        // Set partnerId to null for the partner user
+        const user = await prisma.user.findUnique({ where: { id: userId } });
+        if (user?.partnerId) {
+            await prisma.user.update({
+                where: { id: user.partnerId },
+                data: { partnerId: null }
+            });
+            // Notify partner via WebSocket
+            const io = getIO();
+            io.to(user.partnerId).emit("partner:removed");
+        }
+        // Delete the user
+        await prisma.user.delete({ where: { id: userId } });
+        res.json({ message: "User deleted" });
     } catch (error) {
         res.status(500).json({ error: "Something went wrong" });
         console.error(error);
@@ -438,6 +470,12 @@ export async function uploadAvatar(req, res) {
   try {
     if (!req.file) return res.status(400).json({ error: "No image" });
     const userId = req.user.userId;
+
+    const existing= await prisma.user.findUnique({
+        where: { id: userId },
+        select: { avatarUrl: true }
+    });
+
     const relativePath = `/uploads/avatars/${req.file.filename}`;
     const updated = await prisma.user.update({
       where: { id: userId },
@@ -459,6 +497,20 @@ export async function uploadAvatar(req, res) {
     }
     res.json({ avatarUrl: relativePath });
     console.log("Avatar uploaded:", updated);
+    // Optionally delete old avatar file
+    if (existing?.avatarUrl &&
+        existing.avatarUrl !== relativePath &&
+        existing.avatarUrl.startsWith("/uploads/avatars/") &&
+        !existing.avatarUrl.includes("..")) {
+        const oldPath = path.join(process.cwd(), existing.avatarUrl.replace(/^\/+/, ""));
+        fs.promises.unlink(oldPath)
+        .then(() => {
+            console.log("Old avatar deleted:", oldPath);
+        })
+        .catch(err => {
+            console.error("Failed to delete old avatar:", err);
+        });
+    }
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: "Avatar upload failed" });

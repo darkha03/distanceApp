@@ -1,210 +1,307 @@
-import React, { useState } from "react";
-import { View, StyleSheet, Modal, TextInput, Pressable } from "react-native";
+import React, { useState, useContext } from "react";
+import { View, StyleSheet, Modal, TextInput, Pressable, ScrollView, Platform, KeyboardAvoidingView } from "react-native";
 import { AuthContext } from "@/utils/authContext";
 import { useAuthStore } from "@/store/authStore";
 import { Colors } from "@/constants/Colors";
 import { AppText } from "@/components/AppText";
+import { SectionHeader } from "@/components/app/SectionHeader";
+import { FieldRow } from "@/components/app/FieldRow";
+import { router } from "expo-router";
+import { removeToken } from "@/utils/storage";
+import { Ionicons } from "@expo/vector-icons";
+
+const BORDER = Colors.light.primary;
 
 export default function AccountScreen() {
+  const { token, clearToken } = useAuthStore();
+  const authCtx = useContext(AuthContext);
+  const BASE_URL = (process.env.EXPO_PUBLIC_API_BASE_URL || "http://localhost:4000").replace(/\/$/,"");
+  if (!authCtx?.user) return null;
+  const user = authCtx.user;
+
   const [changePassVisible, setChangePassVisible] = useState(false);
   const [deleteVisible, setDeleteVisible] = useState(false);
-  const { token } = useAuthStore();
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
-  const BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://localhost:4000';
-  const authContext = React.useContext(AuthContext);
-  if (!authContext?.user) {
-    return null;
-  }
-  const { user } = authContext;
+  const [message, setMessage] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+
+  const clearMessageSoon = () => setTimeout(()=>setMessage(""),2000);
 
   const handleChangePassword = async () => {
+    if (newPassword.trim().length < 6) {
+      setError("Min 6 chars");
+      return;
+    }
     if (newPassword !== confirmPassword) {
       setError("Passwords do not match");
       return;
     }
-    
-    // Call backend API to change password
     try {
-    const res = await fetch(`${BASE_URL}/api/users/password`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ newPassword }),
-    });
-    if (!res.ok) {
+      const res = await fetch(`${BASE_URL}/api/users/password`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ newPassword }),
+      });
       const data = await res.json();
-      setError(data.error || "Failed to change password");
+      if (!res.ok) {
+        setError(data.error || "Failed");
+      } else {
+        setError("");
+        setChangePassVisible(false);
+        setNewPassword("");
+        setConfirmPassword("");
+        setMessage("Password updated");
+        clearMessageSoon();
+      }
+    } catch {
+      setError("Request failed");
     }
-    else {
-      setError("");
-      setChangePassVisible(false);
-      setNewPassword("");
-      setConfirmPassword("");
+  };
+
+  const handleDeleteAccount = async () => {
+    try {
+      const res = await fetch(`${BASE_URL}/api/users/${user.id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        setDeleteVisible(false);
+        clearToken();
+        removeToken();
+        router.replace("/auth/login");
+      } else {
+        setMessage("Delete failed");
+        clearMessageSoon();
+      }
+    } catch {
+      setMessage("Delete failed");
+      clearMessageSoon();
     }
-    } catch (e) {
-    console.log("Password change failed", e);
-    setError("Password change failed");
-    return;
-    }
-  }
+  };
 
   return (
-    <View style={styles.container}>
-      {/* Table */}
-      <View style={styles.table}>
-        <View style={styles.row}>
-          <AppText style={styles.label}>Email:</AppText>
-          <AppText style={styles.value}>{user.email}</AppText>
-        </View>
-        <View style={styles.row}>
-          <AppText style={styles.label}>Username:</AppText>
-          <AppText style={styles.value}>{user.username}</AppText>
-        </View>
-      </View>
+    <KeyboardAvoidingView
+      style={{ flex:1, backgroundColor:"#000" }}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 80 : 0}
+    >
+      <ScrollView
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={styles.scroll}
+      >
+        {message !== "" && (
+          <View style={styles.toast}>
+            <AppText style={styles.toastText}>{message}</AppText>
+          </View>
+        )}
 
-      {/* Change Password Button */}
-      <Pressable style={styles.btn} onPress={() => setChangePassVisible(true)}>
-        <AppText style={styles.btnText}>Change Password</AppText>
-      </Pressable>
+        {/* Top immutable account info box */}
+        <SectionHeader title="Account" editing={true} onEdit={()=>{}} />
+        <View style={styles.box}>
+          <FieldRow
+            left="Email"
+            rightComponent={<AppText style={styles.valueText}>{user.email}</AppText>}
+            isLast={false}
+          />
+          <FieldRow
+            left="Username"
+            rightComponent={<AppText style={styles.valueText}>{user.username}</AppText>}
+            isLast
+          />
+        </View>
 
-      {/* Delete Account Button */}
-      <Pressable style={[styles.btn, styles.deleteBtn]} onPress={() => setDeleteVisible(true)}>
-        <AppText style={styles.btnText}>Delete Account</AppText>
-      </Pressable>
+        {/* Security section */}
+        <SectionHeader title="Security" editing={true} onEdit={()=>{}} />
+        <View style={styles.box}>
+          <FieldRow
+            left="Password"
+            rightComponent={
+              <Pressable style={styles.inlineBtn} onPress={()=>setChangePassVisible(true)}>
+                <AppText style={styles.inlineBtnText}>Change</AppText>
+              </Pressable>
+            }
+            isLast={false}
+          />
+          <FieldRow
+            left="Delete Account"
+            rightComponent={
+              <Pressable style={[styles.inlineBtn, styles.dangerInline]} onPress={()=>setDeleteVisible(true)}>
+                <AppText style={styles.dangerInlineText}>Delete</AppText>
+              </Pressable>
+            }
+            isLast
+          />
+        </View>
+      </ScrollView>
 
       {/* Change Password Modal */}
-      <Modal transparent visible={changePassVisible} animationType="slide">
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
+      <Modal transparent visible={changePassVisible} animationType="fade" onRequestClose={()=>setChangePassVisible(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
             <AppText style={styles.modalTitle}>Change Password</AppText>
+            <View style={styles.inputRow}>
             <TextInput
               style={styles.input}
-              placeholder="New Password"
-              secureTextEntry
+              placeholder="New password"
+              placeholderTextColor="#777"
+              secureTextEntry = {!showPassword}
               value={newPassword}
               onChangeText={setNewPassword}
             />
+            <Pressable onPress={() => setShowPassword(v => !v)} style={styles.eyeBtn}>
+            <Ionicons
+              name={showPassword ? "eye-off-outline" : "eye-outline"}
+              size={22}
+              color="#fff"
+            />
+            </Pressable>
+            </View>
+            <View style={styles.inputRow}>
             <TextInput
               style={styles.input}
-              placeholder="Confirm Password"
-              secureTextEntry
+              placeholder="Confirm password"
+              placeholderTextColor="#777"
+              secureTextEntry = {!showConfirm}
               value={confirmPassword}
               onChangeText={setConfirmPassword}
             />
-            {error ? <AppText style={{ color: 'red' }}>{error}</AppText> : null}
-            <Pressable style={styles.btn} onPress={() => handleChangePassword()}>
-              <AppText style={styles.btnText}>Confirm</AppText>
+            <Pressable onPress={() => setShowConfirm(v => !v)} style={styles.eyeBtn}>
+            <Ionicons
+              name={showConfirm ? "eye-off-outline" : "eye-outline"}
+              size={22}
+              color="#fff"
+            />
+          </Pressable>
+          </View>
+            {error ? <AppText style={styles.errorText}>{error}</AppText> : null}
+            <Pressable style={styles.modalBtnPrimary} onPress={handleChangePassword}>
+              <AppText style={styles.modalBtnPrimaryText}>Confirm</AppText>
             </Pressable>
-            <Pressable style={styles.cancelBtn} onPress={() => setChangePassVisible(false)}>
-              <AppText style={styles.cancelText}>Cancel</AppText>
+            <Pressable style={styles.modalBtnSecondary} onPress={()=>setChangePassVisible(false)}>
+              <AppText style={styles.modalBtnSecondaryText}>Cancel</AppText>
             </Pressable>
           </View>
         </View>
       </Modal>
 
       {/* Delete Account Modal */}
-      <Modal transparent visible={deleteVisible} animationType="fade">
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <AppText style={styles.modalTitle}>Are you sure you want to delete your account?</AppText>
-            <Pressable style={styles.btn} onPress={() => setDeleteVisible(false)}>
-              <AppText style={styles.btnText}>Yes, Delete</AppText>
+      <Modal transparent visible={deleteVisible} animationType="fade" onRequestClose={()=>setDeleteVisible(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <AppText style={styles.modalTitle}>Delete Account?</AppText>
+            <AppText style={styles.warnText}>This action cannot be undone.</AppText>
+            <Pressable style={[styles.modalBtnPrimary, styles.dangerBtn]} onPress={handleDeleteAccount}>
+              <AppText style={styles.modalBtnPrimaryText}>Yes, Delete</AppText>
             </Pressable>
-            <Pressable style={styles.cancelBtn} onPress={() => setDeleteVisible(false)}>
-              <AppText style={styles.cancelText}>Cancel</AppText>
+            <Pressable style={styles.modalBtnSecondary} onPress={()=>setDeleteVisible(false)}>
+              <AppText style={styles.modalBtnSecondaryText}>Cancel</AppText>
             </Pressable>
           </View>
         </View>
       </Modal>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: "center", // center vertically
-    alignItems: "center", // center horizontally
-    padding: 20,
-    backgroundColor: Colors.light.background,
+  scroll:{ padding:20, paddingBottom:60, backgroundColor:"#000" },
+  toast:{
+    backgroundColor:"#1e1e1e",
+    borderColor:BORDER,
+    borderWidth:1,
+    paddingVertical:6,
+    paddingHorizontal:14,
+    borderRadius:14,
+    marginBottom:16,
+    alignSelf:"center"
   },
-  table: {
-    width: "100%",
-    borderWidth: 1,
-    borderColor: Colors.light.border,
-    marginBottom: 20,
-    borderRadius: 8,
-    overflow: "hidden",
+  toastText:{ color:BORDER, fontWeight:"600" },
+  box:{
+    width:"100%",
+    borderWidth:2,
+    borderColor:BORDER,
+    borderRadius:14,
+    overflow:"hidden",
+    marginBottom:24,
+    backgroundColor:"#050505"
   },
-  row: {
+  valueText:{ color:"#fff", fontSize:14 },
+  inlineBtn:{
+    backgroundColor:BORDER,
+    paddingVertical:6,
+    paddingHorizontal:14,
+    borderRadius:12
+  },
+  inlineBtnText:{ color:"#222", fontWeight:"600", fontSize:12 },
+  dangerInline:{
+    backgroundColor:Colors.light.danger
+  },
+  dangerInlineText:{ color:"#fff", fontWeight:"600", fontSize:12 },
+  modalOverlay:{
+    flex:1,
+    backgroundColor:"rgba(0,0,0,0.55)",
+    justifyContent:"center",
+    alignItems:"center",
+    padding:24
+  },
+  modalCard:{
+    width:"100%",
+    maxWidth:360,
+    backgroundColor:"#111",
+    borderRadius:18,
+    borderWidth:1,
+    borderColor:BORDER,
+    padding:20
+  },
+  modalTitle:{ color:"#fff", fontWeight:"600", fontSize:18, marginBottom:10, textAlign:"center" },
+  warnText:{ color:"#bbb", fontSize:13, textAlign:"center", marginBottom:16 },
+    inputRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    padding: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.light.border,
-  },
-  label: {
-    fontWeight: "bold",
-  },
-  value: {
-    color: Colors.light.text,
-  },
-  btn: {
-    backgroundColor: Colors.light.primary,
-    padding: 12,
-    borderRadius: 8,
-    marginTop: 10,
-    width: "100%",
     alignItems: "center",
-  },
-  deleteBtn: {
-    backgroundColor: Colors.light.danger,
-  },
-  btnText: {
-    color: Colors.light.text,
-    fontWeight: "bold",
-  },
-  modalContainer: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  modalContent: {
-    backgroundColor: Colors.light.background,
-    padding: 20,
-    borderRadius: 12,
-    width: "80%",
-    alignItems: "center",
-  },
-  modalTitle: {
-    fontSize: 18,
-    marginBottom: 15,
-    fontWeight: "bold",
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: Colors.light.border,
-    borderRadius: 8,
-    padding: 10,
-    width: "100%",
     marginBottom: 10,
-    color: Colors.light.text,
   },
-  cancelBtn: {
-    backgroundColor: Colors.light.secondary,
-    padding: 12,
-    borderRadius: 8,
-    marginTop: 10,
-    width: "100%",
-    alignItems: "center",
+  eyeBtn: {
+    position: "absolute",
+    right: 8,
+    top: -5,
+    height: "100%",
+    justifyContent: "center",
+    padding: 6,
+    zIndex: 2,
+  },  
+  input:{
+    borderWidth:1,
+    borderColor:BORDER,
+    borderRadius:10,
+    paddingVertical:10,
+    paddingHorizontal:12,
+    color:"#fff",
+    fontSize:14,
+    marginBottom:10,
+    flex:1
   },
-  cancelText: {
-    color: Colors.light.text,
-    fontWeight: "bold",
+  errorText:{ color:Colors.light.danger, marginBottom:8, fontSize:13 },
+  modalBtnPrimary:{
+    backgroundColor:BORDER,
+    paddingVertical:12,
+    borderRadius:14,
+    alignItems:"center",
+    marginTop:4
   },
+  dangerBtn:{ backgroundColor:Colors.light.danger },
+  modalBtnPrimaryText:{ color:"#fff", fontWeight:"600" },
+  modalBtnSecondary:{
+    backgroundColor:"#333",
+    paddingVertical:10,
+    borderRadius:14,
+    alignItems:"center",
+    marginTop:10
+  },
+  modalBtnSecondaryText:{ color:"#fff", fontWeight:"500" }
 });

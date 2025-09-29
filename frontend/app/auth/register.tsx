@@ -6,7 +6,8 @@ import { useAuthStore } from "@/store/authStore";
 import { saveToken } from "@/utils/storage";
 import { useRouter } from "expo-router";
 import * as React from "react";
-import { Button, TouchableOpacity, View, ActivityIndicator } from "react-native";
+import { Pressable, TouchableOpacity, View, ActivityIndicator } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 
 export default function RegisterScreen() {
   const [username, setUsername] = React.useState("");
@@ -16,6 +17,8 @@ export default function RegisterScreen() {
   const [confirmPassword, setConfirmPassword] = React.useState("");
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState("");
+  const [showPassword, setShowPassword] = React.useState(false);
+  const [showConfirm, setShowConfirm] = React.useState(false);
   const BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://localhost:4000';
   const router = useRouter();
   const { setToken } = useAuthStore();
@@ -69,20 +72,60 @@ export default function RegisterScreen() {
         value={name}
         onChangeText={setName}
       />
-      <AppInput 
-        placeholder="Password" 
-        style={{ width: 200, marginBottom: 12 }}
-        secureTextEntry 
-        value={password}
-        onChangeText={setPassword}  
-      />
-      <AppInput 
-        placeholder="Confirm Password"
-        style={{ width: 200, marginBottom: 12 }} 
-        secureTextEntry 
-        value={confirmPassword}
-        onChangeText={setConfirmPassword}
-      />
+      <View style={{ width: 200, marginBottom: 12, position: "relative" }}>
+        <AppInput
+          placeholder="Password"
+          style={{ paddingRight: 40 }}
+          secureTextEntry={!showPassword}
+          value={password}
+          onChangeText={setPassword}
+        />
+        <Pressable
+          onPress={() => setShowPassword(v => !v)}
+          style={{
+            position: "absolute",
+            right: 8,
+            top: 0,
+            height: "100%",
+            justifyContent: "center",
+            padding: 6,
+            zIndex: 2,
+          }}
+        >
+          <Ionicons
+            name={showPassword ? "eye-off-outline" : "eye-outline"}
+            size={22}
+            color="#fff"
+          />
+        </Pressable>
+      </View>
+      <View style={{ width: 200, marginBottom: 12, position: "relative" }}>
+        <AppInput
+          placeholder="Confirm Password"
+          style={{ paddingRight: 40 }}
+          secureTextEntry={!showConfirm}
+          value={confirmPassword}
+          onChangeText={setConfirmPassword}
+        />
+        <Pressable
+          onPress={() => setShowConfirm(v => !v)}
+          style={{
+            position: "absolute",
+            right: 8,
+            top: 0,
+            height: "100%",
+            justifyContent: "center",
+            padding: 6,
+            zIndex: 2,
+          }}
+        >
+          <Ionicons
+            name={showConfirm ? "eye-off-outline" : "eye-outline"}
+            size={22}
+            color="#fff"
+          />
+        </Pressable>
+      </View>
       <AppButton 
         title="Register" 
         onPress={() => handleRegister()} 

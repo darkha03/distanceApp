@@ -10,8 +10,6 @@ import { FieldRow } from "@/components/app/FieldRow";
 import { DateField } from "@/components/app/DateField";
 import * as ImagePicker from 'expo-image-picker';
 
-const BORDER = Colors.light.primary;
-
 export default function ProfileScreen() {
   const authCtx = useContext(AuthContext);
   const { token } = useAuthStore();
@@ -200,9 +198,15 @@ export default function ProfileScreen() {
   };
 
   return (
-    <KeyboardAvoidingView style={{ flex: 1 }} 
-      behavior= {Platform.OS === "ios" ? "padding" : "height"}>
-      <ScrollView contentContainerStyle={styles.scroll}>
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 80 : 0} // tweak if header present
+    >
+      <ScrollView
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={[styles.scroll, { flexGrow: 1, paddingBottom: 80 }]}
+      >
         {message !== "" && (
           <View style={styles.toast}>
             <AppText style={styles.toastText}>{message}</AppText>
@@ -391,7 +395,7 @@ const styles = StyleSheet.create({
   box:{
     width:"100%",
     borderWidth:2,
-    borderColor:BORDER,
+    borderColor:Colors.light.primary,
     borderRadius:14,
     overflow:"hidden",
     marginBottom:18,
