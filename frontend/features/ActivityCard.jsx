@@ -1,5 +1,5 @@
 import React, { useState, useContext } from "react";
-import { View, TouchableOpacity, StyleSheet, Image } from "react-native";
+import { View, TouchableOpacity, StyleSheet, Image, FlatList, Dimensions } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "@/constants/Colors";
 import { AppCard } from "@/components/AppCard";
@@ -19,15 +19,16 @@ export const ActivityCard = () => {
   const user = authContext.user;
   const setUser = authContext.setUser;
   const [selectedActivity, setSelectedActivity] = useState(user.status || "sleep");
-  const [thought, setThought] = useState("");
-  const [newThought, setNewThought] = useState("");
-  const [editing, setEditing] = useState(false);
+  //const [thought, setThought] = useState("");
+  //const [newThought, setNewThought] = useState("");
+  //const [editing, setEditing] = useState(false);
   const BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://localhost:4000';
-  const [activityImage, setActivityImage] = useState(null);
-  // Example activities
   const activities = ["sleep", "study", "relax", "play"];
+  const [activityImages, setActivityImages] = useState(user.activityImages || []); // new
+  const IMAGE_SIZE = 160;
+  const [currentIndex, setCurrentIndex] = useState(0);
 
-  const handlePostThought = () => {
+{/*  const handlePostThought = () => {
     if (newThought.trim()) {
       setThought(newThought.trim());
       setNewThought("");
@@ -35,60 +36,61 @@ export const ActivityCard = () => {
       // Here you could also send the thought to a backend or store it
       // For now, we just update the local state
     }
-  };
-  const pickImage = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== 'granted') {
-        alert('Permission to access photo library is required!');
-        return;
-      }
-    let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaType,
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 1,
-    });
-    if (!result.canceled) {
-      const asset = result.assets[0];
-      const uri = asset.uri;
-      console.log("Picked image URI:", uri);
-      await uploadActivityImage(uri);
-      setActivityImage(uri);
-    }
-  };
-
-  const uploadActivityImage = async (uri) => {
+  };*/}
+  const uploadActivityImages = async (uris) => {
     try {
-      const name = uri.split("/").pop() || "activity.jpg";
-      const ext = (name.split(".").pop() || "jpg").toLowerCase();
-      const type = ext === "jpg" ? "image/jpeg" : `image/${ext}`;
-
+      if (!uris.length) return;
       const form = new FormData();
-      form.append("activityImage", {
-        uri: uri.startsWith("file://") ? uri : `file://${uri}`,
-        name,
-        type
+      uris.forEach((uri, idx) => {
+        const name = uri.split("/").pop() || `activity-${idx}.jpg`;
+        const ext = (name.split(".").pop() || "jpg").toLowerCase();
+        const type = ext === "jpg" ? "image/jpeg" : `image/${ext}`;
+        form.append("activityImages", {
+          uri: uri.startsWith("file://") ? uri : `file://${uri}`,
+          name,
+            type
+        });
       });
-      console.log("Uploading image with form data:", name, type, ext);
 
-      const res = await fetch(`${BASE_URL}/api/users/activity-image`, {
+      const res = await fetch(`${BASE_URL}/api/users/activity-images`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
         body: form
       });
-
       const data = await res.json();
-      if (res.ok) {
-        setUser(prev => prev ? { ...prev, activityImageUrl: data.activityImageUrl } : prev);
-        setActivityImage(`${BASE_URL}${data.activityImageUrl}`);
+      if (res.ok && data.uploaded) {
+        setActivityImages(prev => {
+          // merge unique by id
+          const map = new Map(prev.map(i => [i.id, i]));
+          data.uploaded.forEach(i => map.set(i.id, i));
+          return Array.from(map.values()).sort((a,b)=> new Date(a.createdAt)-new Date(b.createdAt));
+        });
+        setUser(prev => prev ? { ...prev, activityImages: (prev.activityImages || []).concat(data.uploaded) } : prev);
       } else {
-        console.log("Upload failed:", data);
+        console.log("Multi upload failed:", data);
       }
     } catch (e) {
       console.log("Upload error", e);
     }
   };
-
+  const pickImages = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      alert('Permission to access photo library is required!');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsMultipleSelection: true,
+      selectionLimit: 5,
+      allowsEditing: false,
+      quality: 0.9
+    });
+    if (!result.canceled) {
+      const uris = result.assets.map(a => a.uri);
+      await uploadActivityImages(uris);
+    }
+  };
 
   const takePhoto = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
@@ -102,14 +104,54 @@ export const ActivityCard = () => {
       quality: 1,
     });
     if (!result.canceled) {
-      const uri = result.assets[0].uri; 
-      setActivityImage(uri);
-      await uploadActivityImage(uri);
+      await uploadActivityImages([result.assets[0].uri]);
     }
+  };
+  const renderActivityCarousel = () => {
+    if (!activityImages.length) {
+      return user.status && statusImageMap[user.status] ? (
+        <Image
+          source={statusImageMap[user.status]}
+          style={{ width: IMAGE_SIZE, height: IMAGE_SIZE, borderRadius: 10 }}
+          resizeMode="contain"
+        />
+      ) : (
+        <Ionicons name="image-outline" size={72} color="#aaa" />
+      );
+    }
+    return (
+      <FlatList
+        horizontal
+        data={activityImages}
+        keyExtractor={item => item.id}
+        showsHorizontalScrollIndicator={false}
+        onMomentumScrollEnd={e => {
+            const index = Math.round(e.nativeEvent.contentOffset.x / IMAGE_SIZE);
+            setCurrentIndex(Math.min(index, activityImages.length - 1));
+          }}
+        pagingEnabled
+        snapToInterval={IMAGE_SIZE + 8}
+        decelerationRate="fast"
+        renderItem={({ item }) => (
+          <View style={{ width: IMAGE_SIZE, height: IMAGE_SIZE, marginRight: 8 }}>
+            <Image
+              source={{ uri: `${BASE_URL}${item.url}` }}
+              style={{ width: "100%", height: "100%", borderRadius: 10 }}
+            />
+            <View style={styles.dotsRow}>
+              {activityImages.map((_, i)=>(
+                <View key={i} style={[styles.dot, i===currentIndex && styles.dotActive]} />
+              ))}
+            </View>
+          </View>
+        )}
+        style={{ maxHeight: IMAGE_SIZE }}
+        contentContainerStyle={{ paddingRight: 8 }}
+      />
+    );
   };
   const handleUpdateActivity = async (activity) => {
     setSelectedActivity(activity);
-    // Here you could also send the status to a backend or store it
     try {
       const res = await fetch(`${BASE_URL}/api/users/status`, {
         method: "PUT",
@@ -159,29 +201,11 @@ export const ActivityCard = () => {
         {/* Right column - placeholder */}
         <View style={styles.imagePlaceholder}>
           <View style={{ justifyContent: 'center', alignItems: 'center', minHeight: 160 }}>
-            {activityImage ? (
-              <Image
-                source={{ uri: activityImage }}
-                style={{ width: 160, height: 160, borderRadius: 10 }}
-              />
-            ) : user.activityImageUrl ? (
-              <Image
-                source={{ uri: `${BASE_URL}${user.activityImageUrl}` }}
-                style={{ width: 160, height: 160, borderRadius: 10 }}
-              />
-            ) : statusImageMap[user.status] ? (
-              <Image
-                source={statusImageMap[user.status]}
-                style={{ width: 160, height: 160, borderRadius: 10 }}
-                resizeMode="contain"
-              />
-            ) : (
-              <Ionicons name="image-outline" size={72} color="#aaa" />
-            )}
+            {renderActivityCarousel()}
           </View>
           
           <View style={styles.photoButtonRow}>
-            <TouchableOpacity onPress={pickImage} style={styles.photoButton}>
+            <TouchableOpacity onPress={pickImages} style={styles.photoButton}>
             <Ionicons name="images-outline" size={20} color={Colors.light.text} />
           </TouchableOpacity>
           <TouchableOpacity onPress={takePhoto} style={styles.photoButton}>
@@ -262,7 +286,8 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     justifyContent: "center",
     alignItems: "center",
-    minHeight: 120,
+    minHeight: 160,
+    padding: 4,
   },
   thoughtSection: {
     marginTop: 8,
@@ -309,4 +334,19 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.light.primary,
   },
+  dotsRow: {
+    flexDirection: "row",
+    justifyContent: "center",
+    marginTop: 6
+  },
+  dot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: "#555",
+    marginHorizontal: 3
+  },
+  dotActive: {
+    backgroundColor: "#c9a4f7"
+  }
 });

@@ -5,6 +5,11 @@ import fs from "fs";
 import path from "path";
 
 const prisma = new PrismaClient();
+const EXPIRY_MS = 24 * 60 * 64 * 1000; // 24 hours
+
+function activityCutoffDate() {
+    return new Date(Date.now() - EXPIRY_MS);
+}
 
 // GET USER PROFILE
 // Return user with partner info
@@ -63,10 +68,27 @@ export async function getUserProfile(req, res) {
         anniversary = invite?.anniversary || null;
         }
 
+        let activityImages = [];
+        if (user.partnerId) {
+            activityImages = await prisma.activityImage.findMany({ 
+                where: { userId: user.partnerId, createdAt: { gte: activityCutoffDate() } },
+                orderBy: { createdAt: "asc" }
+            });
+        }
+        user.partner = user.partner ? { ...user.partner, activityImages } : null;
+        
+        let userActivityImages = [];
+        userActivityImages = await prisma.activityImage.findMany({ 
+            where: { userId: id, createdAt: { gte: activityCutoffDate() } },
+            orderBy: { createdAt: "asc" }
+        });
+        
+
         // Return combined payload (anniversary is relationship-level)
         res.json({
         ...user,
-        anniversary
+        anniversary,
+        activityImages: userActivityImages
         });
     } catch (error) {
         res.status(500).json({ error: error.message || "Something went wrong" });
@@ -383,46 +405,6 @@ export async function updateUserStatus(req, res) {
     }
 }
 
-// RESPOND TO ACTIVITY IMAGE UPLOAD
-// Return updated user with partner info
-// Emit socket event to the partner with the new activity image URL
-export async function respondActivityImage(req, res) {
-  try {
-    console.log("Received file:", req.file);
-    if (!req.file) return res.status(400).json({ error: "No image" });
-    const userId = req.user.userId;
-    // Build a public URL (for dev you can serve /uploads statically)
-    const relativePath = `/uploads/activity/${req.file.filename}`;
-    const updated = await prisma.user.update({
-      where: { id: userId },
-      data: { activityImageUrl: relativePath },
-      select: {
-        id: true,
-        username: true,
-        status: true,
-        activityImageUrl: true,
-        partnerId: true,
-        partner: {
-          select: { id: true, username: true, status: true, activityImageUrl: true }
-        }
-      }
-    });
-
-    if (updated.partnerId) {
-      const io = getIO();
-      io.to(updated.partnerId).emit("partner:activityImage", {
-        userId,
-        activityImageUrl: relativePath
-      });
-    }
-
-    res.json(updated);
-  } catch (e) {
-    console.error(e);
-    res.status(500).json({ error: "Upload failed" });
-  }
-}
-
 // UPDATE ANNIVERSARY
 // Return updated invite with anniversary info
 // Anniversary is stored in the invite record when the invite is accepted
@@ -514,5 +496,85 @@ export async function uploadAvatar(req, res) {
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: "Avatar upload failed" });
+  }
+}
+
+export async function uploadActivityImages(req, res) {
+  try {
+    const userId = req.user.userId;
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ error: "No images" });
+    }
+
+    // Clean expired for this user before adding new (lazy cleanup)
+    await prisma.activityImage.deleteMany({
+      where: {
+        userId,
+        createdAt: { lt: activityCutoffDate() }
+      }
+    });
+
+    const recordsData = req.files.map(f => ({
+      userId,
+      url: `/uploads/activity/${f.filename}`
+    }));
+
+    const created = await prisma.$transaction(
+      recordsData.map(d => prisma.activityImage.create({ data: d }))
+    );
+
+    // Notify partner (send only metadata to reduce payload)
+    const user = await prisma.user.findUnique({ where: { id: userId }, select: { partnerId: true } });
+    if (user?.partnerId) {
+      const io = getIO();
+      io.to(user.partnerId).emit("partner:activityImages", {
+        userId,
+        images: created.map(c => ({ id: c.id, url: c.url, createdAt: c.createdAt }))
+      });
+    }
+
+    res.json({
+      uploaded: created.map(c => ({ id: c.id, url: c.url, createdAt: c.createdAt }))
+    });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "Upload failed" });
+  }
+}
+
+// NEW: get active (non-expired) images for a user
+export async function getActiveActivityImages(req, res) {
+  try {
+    const { id } = req.params;
+    // You may want to ensure caller is the user or their partner (authorization check)
+    const cutoff = activityCutoffDate();
+
+    // Lazy delete expired (global for this user)
+    const expired = await prisma.activityImage.findMany({
+      where: { userId: id, createdAt: { lt: cutoff } }
+    });
+
+    if (expired.length) {
+      // Remove files
+      expired.forEach(img => {
+        if (img.url.startsWith("/uploads/activity/")) {
+          const abs = path.join(process.cwd(), img.url.replace(/^\/+/, ""));
+          fs.promises.unlink(abs).catch(()=>{});
+        }
+      });
+      await prisma.activityImage.deleteMany({
+        where: { userId: id, createdAt: { lt: cutoff } }
+      });
+    }
+
+    const active = await prisma.activityImage.findMany({
+      where: { userId: id, createdAt: { gte: cutoff } },
+      orderBy: { createdAt: "asc" }
+    });
+
+    res.json(active);
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "Fetch failed" });
   }
 }

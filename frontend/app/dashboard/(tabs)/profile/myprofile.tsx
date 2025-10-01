@@ -106,6 +106,8 @@ export default function ProfileScreen() {
       }
       const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
       const { latitude, longitude } = pos.coords;
+      const loc = await revesedGeoCode(latitude, longitude);
+      setField("location", loc);
       const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
       setField("latitude", latitude);
       setField("longitude", longitude);
@@ -118,6 +120,18 @@ export default function ProfileScreen() {
       setLocLoading(false);
     }
   };
+
+  const revesedGeoCode = async (lat: number, lon: number) => {
+    try {
+      const res = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=en`);
+      const data = await res.json();
+      if (data.city && data.countryName) return `${data.city}, ${data.countryName}`;
+    } catch (e) {
+      console.log("Reverse geo error", e);
+    }
+    return "";
+  };
+
   const uploadAvatar = async (uri: string) => {
     try {
       const name = uri.split("/").pop() || "avatar.jpg";
@@ -199,13 +213,13 @@ export default function ProfileScreen() {
 
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1 }}
+      style={{ flex: 1, backgroundColor:Colors.light.background }}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
       keyboardVerticalOffset={Platform.OS === "ios" ? 80 : 0} // tweak if header present
     >
       <ScrollView
         keyboardShouldPersistTaps="handled"
-        contentContainerStyle={[styles.scroll, { flexGrow: 1, paddingBottom: 80 }]}
+        contentContainerStyle={styles.scroll}
       >
         {message !== "" && (
           <View style={styles.toast}>
@@ -365,7 +379,7 @@ export default function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  scroll: {alignItems:"center", padding:20, paddingBottom:40, backgroundColor:"#000", },
+  scroll: {alignItems:"center", padding:20, paddingBottom:40, flexGrow:1 },
   toast: {
     backgroundColor:"#1e1e1e",
     borderColor:Colors.light.primary,

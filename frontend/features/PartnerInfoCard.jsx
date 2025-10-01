@@ -1,5 +1,5 @@
-import { useState, useContext, useEffect } from "react";
-import { View, StyleSheet, TouchableOpacity, Image } from "react-native";
+import { useState, useContext, useEffect, useMemo } from "react";
+import { View, StyleSheet, TouchableOpacity, Image, Modal, Pressable, FlatList, Dimensions } from "react-native";
 import { AppCard } from "@/components/AppCard";
 import { AppText } from "@/components/AppText";
 import { Ionicons } from "@expo/vector-icons";
@@ -8,8 +8,9 @@ import { Colors } from "@/constants/Colors";
 import { weatherCodeIconMap } from "@/utils/weatherCodes";
 import { statusImageMap } from "@/utils/statusImage";
 
+const IMAGE_SIZE = 120;
+
 export function PartnerInfoCard() {
-  const [expanded, setExpanded] = useState(false);
   const authContext = useContext(AuthContext);
   if (!authContext?.user || !authContext.user.partner) {
     return null;
@@ -22,7 +23,12 @@ export function PartnerInfoCard() {
   const [partnerTime, setPartnerTime] = useState("");
   const [partnerDate, setPartnerDate] = useState("");
   const [weather, setWeather] = useState(null);
-  const [showActivityImage, setShowActivityImage] = useState(true);
+  const [fullScreenVisible, setFullScreenVisible] = useState(false);
+  const [fullScreenIndex, setFullScreenIndex] = useState(0);
+  const [showActivityImages, setShowActivityImages] = useState(true);
+  // Use partner.activityImages (array of {id, url, createdAt})
+  const activityImages = partner.activityImages || [];
+  const [currentIndex, setCurrentIndex] = useState(0);
 
   useEffect(() => {
     const update = () => {
@@ -50,8 +56,7 @@ export function PartnerInfoCard() {
         setPartnerDate(now.toDateString());
       }
     };
-     update();
-    // Align refresh to the next minute boundary for smoother ticks
+    update();
     const firstDelay = 60000 - (Date.now() % 60000);
     let intervalId;
     const timeout = setTimeout(() => {
@@ -64,6 +69,7 @@ export function PartnerInfoCard() {
       if (intervalId) clearInterval(intervalId);
     };
   }, [partnerTz]);
+
   useEffect(() => {
     let intervalId;
     const fetchWeather = async () => {
@@ -80,113 +86,210 @@ export function PartnerInfoCard() {
       }
     };
     fetchWeather();
-    intervalId = setInterval(fetchWeather, 15 * 60 * 1000); // every 15 minutes
+    intervalId = setInterval(fetchWeather, 15 * 60 * 1000);
 
     return () => {
       clearInterval(intervalId);
     };
   }, [partner.latitude, partner.longitude]);
- 
-  // Dummy forecast for mockup (replace with real API if needed)
-  const forecast = [
-    { code: weather?.weathercode, temp: weather?.temperature },
-    { code: weather?.weathercode, temp: weather?.temperature },
-  ];
 
-  return (
-    <AppCard style={styles.card}>
-      {/* Top row: Date only */}
-      <View style={styles.dateRow}>
-        <AppText style={styles.day}>{partnerDate}</AppText>
-      </View>
-      {/* Second row: Time, Status (left) + Avatar (right) */}
-      <View style={styles.infoRow}>
+  const daysTogether = useMemo(() => {
+    if (!user.anniversary) return null;
+    const start = new Date(user.anniversary);
+    if (isNaN(start.getTime())) return null;
+    const now = new Date();
+    const diff = Math.floor((now.getTime() - start.getTime()) / 86400000);
+    return diff >= 0 ? diff : 0;
+  }, [user.anniversary]);
 
-        <View style={styles.leftInfo}>
-          <View style={{ height: 80, width:"100%", alignItems: "center" }} >
-          <AppText style={styles.time}>{partnerTime}</AppText>
-          </View>
-          <View style={{ height: 40, width:"100%", alignItems: "center" }}>
-          <AppText style={styles.status}>{partner.status || "Sleep"}</AppText>
-          </View>
-        </View>
+  // Fullscreen modal handlers
+  const openFullScreen = (index) => {
+    setFullScreenIndex(index);
+    setFullScreenVisible(true);
+  };
+  const closeFullScreen = () => {
+    setFullScreenVisible(false);
+  };
 
-        <View style={{ flex: 1, alignItems: "center", position: "relative" }}>
-          {/* Avatar or Status Image */}
-          {partner.activityImageUrl && showActivityImage ? (
-            <Image
-              source={{ uri: `${BASE_URL}${partner.activityImageUrl}` }}
-              style={{ width: 120, height: 120, borderRadius: 10 }}
-            />
-          ) : statusImageMap[partner.status] ? (
-            <Image
-              source={statusImageMap[partner.status]}
-              style={{ width: 120, height: 120, borderRadius: 10 }}
-              resizeMode="contain"
-            />
-          ) : (
-            <Ionicons
-              name="person-circle-outline"
-              size={120}
-              color="#c9a4f7"
-              style={styles.avatar}
-            />
-          )}
-          {/* Swap button */}
-          {(partner.activityImageUrl && statusImageMap[partner.status]) && (
+  // Render swipeable activity images
+  const renderActivityImages = () => {
+    if (!activityImages.length || !showActivityImages) {
+      return partner.status && statusImageMap[partner.status] ? (
+        <Image
+          source={statusImageMap[partner.status]}
+          style={{ width: IMAGE_SIZE, height: IMAGE_SIZE, borderRadius: 10 }}
+          resizeMode="contain"
+        />
+      ) : (
+        <Ionicons
+          name="person-circle-outline"
+          size={IMAGE_SIZE}
+          color="#c9a4f7"
+          style={styles.avatar}
+        />
+      );
+    }
+    return (
+      <View>
+        <FlatList
+          horizontal
+          pagingEnabled
+          data={activityImages}
+          keyExtractor={item => item.id}
+          showsHorizontalScrollIndicator={false}
+          onMomentumScrollEnd={e => {
+            const index = Math.round(e.nativeEvent.contentOffset.x / IMAGE_SIZE);
+            setCurrentIndex(Math.min(index, activityImages.length - 1));
+          }}
+          getItemLayout={(_, index) => ({
+            length: IMAGE_SIZE,
+            offset: IMAGE_SIZE * index,
+            index
+          })}
+          renderItem={({ item, index }) => (
             <TouchableOpacity
-              style={styles.swapImageButton}
-              onPress={() => setShowActivityImage((prev) => !prev)}
+              activeOpacity={0.85}
+              onPress={() => openFullScreen(index)}
+              style={{ width: IMAGE_SIZE, height: IMAGE_SIZE, marginRight: 8 }}
             >
-              <Ionicons name="swap-horizontal-outline" size={20} color="#c9a4f7" />
+              <Image
+                source={{ uri: `${BASE_URL}${item.url}` }}
+                style={{ width: "100%", height: "100%", borderRadius: 10 }}
+              />
             </TouchableOpacity>
           )}
-        </View>
-
-      </View>
-      
-      {/* Expandable Section */}
-      {expanded && (
-        
-        <View style={styles.moreInfo}>
-          {/* Third row: Weather box (left), Forecast (right) */}
-      <View style={styles.weatherRow}>
-        <View style={styles.weatherBox}>
-          <Ionicons
-            name={weatherCodeIconMap[weather?.weathercode] || "help-circle-outline"}
-            size={82}
-            color="#c9a4f7"
-            style={styles.weatherIconBox}
-          />
-          <AppText style={styles.weatherTempBox}>
-            {weather ? `${weather.temperature}°C` : "--"}
-          </AppText>
-        </View>
-        <View style={styles.forecastRow}>
-          {forecast.map((f, i) => (
-            <View key={i} style={styles.forecastBox}>
-              <Ionicons
-                name={weatherCodeIconMap[f.code] || "help-circle-outline"}
-                size={24}
-                color="#c9a4f7"
-              />
-              <AppText style={styles.forecastTemp}>
-                {f.temp ? `${f.temp}°` : "--"}
-              </AppText>
-            </View>
+          style={{ maxWidth: IMAGE_SIZE * 1.2 }}
+        />
+        <View style={styles.dotsRow}>
+          {activityImages.map((_, i) => (
+            <View key={i} style={[styles.dot, i === currentIndex && styles.dotActive]} />
           ))}
         </View>
       </View>
-          <AppText style={styles.label}>Timezone: {partner.timezone}</AppText>
+    );
+  };
+
+  return (
+    <AppCard style={styles.card}>
+      {/* Top row */}
+      <View style={styles.dateRow}>
+        <AppText style={styles.day}>{partnerDate}</AppText>
+      </View>
+
+      {/* Time + Status + Image */}
+      <View style={styles.infoRow}>
+        <View style={styles.leftInfo}>
+          <View style={{ height: 80, width: "100%", alignItems: "center" }}>
+            <AppText style={styles.time}>{partnerTime}</AppText>
+          </View>
+          <View style={{ height: 40, width: "100%", alignItems: "center" }}>
+            <AppText style={styles.status}>{partner.status || "Sleep"}</AppText>
+          </View>
         </View>
-      )}
-      {/* Expand/Collapse Arrow */}
-      <TouchableOpacity
-        style={styles.arrowContainer}
-        onPress={() => setExpanded(!expanded)}
+        <View style={{ flex: 1, alignItems: "center", position: "relative" }}>
+          {renderActivityImages()}
+          {(activityImages.length && statusImageMap[partner.status]) ? (
+            <TouchableOpacity
+              style={styles.swapImageButton}
+              onPress={() => setShowActivityImages(v => !v)}
+            >
+              <Ionicons name="swap-horizontal-outline" size={20} color="#c9a4f7" />
+            </TouchableOpacity>
+          ) : null}
+        </View>
+      </View>
+      <View style={styles.moreInfo}>
+        <View style={styles.metricsRow}>
+          <View style={styles.weatherBox}>
+            <Ionicons
+              name={weatherCodeIconMap[weather?.weathercode] || "help-circle-outline"}
+              size={56}
+              color="#c9a4f7"
+              style={styles.weatherIconBox}
+            />
+            <AppText style={styles.weatherTempBox}>
+              {weather ? `${weather.temperature}°C` : "--"}
+            </AppText>
+          </View>
+          <View style={styles.detailColumn}>
+            <View style={styles.detailRow}>
+              <Ionicons
+                name="location-outline"
+                size={18}
+                color="#c9a4f7"
+                style={{ marginRight: 6 }}
+              />
+              <AppText style={styles.detailValue} numberOfLines={1}>
+                {partner.location || "Not set"}
+              </AppText>
+            </View>
+            <View style={styles.detailRow}>
+              <Ionicons
+                name="heart-outline"
+                size={18}
+                color="#c9a4f7"
+                style={{ marginRight: 6 }}
+              />
+              <AppText style={styles.detailValue}>
+                {daysTogether !== null
+                  ? `${daysTogether} day${daysTogether === 1 ? "" : "s"}`
+                  : "--"}
+              </AppText>
+            </View>
+            <View style={[styles.detailRow, styles.lastDetailRow]}>
+              <Ionicons
+                name="time-outline"
+                size={18}
+                color="#c9a4f7"
+                style={{ marginRight: 6 }}
+              />
+              <AppText style={styles.detailValue} numberOfLines={1}>
+                {partner.timezone || "Not set"}
+              </AppText>
+            </View>
+          </View>
+        </View>
+      </View>
+      {/* Full-screen modal for activity images */}
+      <Modal
+        visible={fullScreenVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={closeFullScreen}
       >
-        <AppText style={styles.arrow}>{expanded ? "▲" : "▼"}</AppText>
-      </TouchableOpacity>
+        <View style={styles.fullOverlay}>
+          <Pressable style={styles.fullCloseHit} onPress={closeFullScreen} />
+          <View style={styles.fullContent}>
+            {activityImages[fullScreenIndex] && (
+              <Image
+                source={{ uri: `${BASE_URL}${activityImages[fullScreenIndex].url}` }}
+                style={styles.fullImage}
+                resizeMode="contain"
+              />
+            )}
+            <View style={styles.fullScreenNav}>
+              <TouchableOpacity
+                disabled={fullScreenIndex === 0}
+                onPress={() => setFullScreenIndex(i => Math.max(i - 1, 0))}
+                style={styles.fullScreenArrow}
+              >
+                <Ionicons name="chevron-back" size={32} color="#fff" />
+              </TouchableOpacity>
+              <TouchableOpacity
+                disabled={fullScreenIndex === activityImages.length - 1}
+                onPress={() => setFullScreenIndex(i => Math.min(i + 1, activityImages.length - 1))}
+                style={styles.fullScreenArrow}
+              >
+                <Ionicons name="chevron-forward" size={32} color="#fff" />
+              </TouchableOpacity>
+            </View>
+            <TouchableOpacity style={styles.closeBtn} onPress={closeFullScreen}>
+              <Ionicons name="close" size={26} color="#fff" />
+            </TouchableOpacity>
+          </View>
+          <Pressable style={styles.fullCloseHit} onPress={closeFullScreen} />
+        </View>
+      </Modal>
     </AppCard>
   );
 }
@@ -204,34 +307,16 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 8,
   },
-  dateRow: {
-    marginBottom: 8,
-    alignItems: "flex-start",
-  },
-  day: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#aaa",
-  },
+  dateRow: { marginBottom: 8, alignItems: "flex-start" },
+  day: { fontSize: 16, fontWeight: "600", color: "#aaa" },
   infoRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     marginBottom: 8,
   },
-  leftInfo: {
-    flexDirection: "column",
-    justifyContent: "center",
-    alignItems: "center", // <-- add this
-    flex: 1,
-  },
-  time: {
-    fontSize: 48,
-    fontWeight: "700",
-    color: "#fff",
-    textAlign: "left",
-    marginBottom: 4,
-  },
+  leftInfo: { flexDirection: "column", justifyContent: "center", alignItems: "center", flex: 1 },
+  time: { fontSize: 48, fontWeight: "700", color: "#fff", textAlign: "left", marginBottom: 4 },
   status: {
     fontSize: 18,
     fontWeight: "500",
@@ -244,87 +329,123 @@ const styles = StyleSheet.create({
     textTransform: "capitalize",
     alignSelf: "center",
   },
-  avatar: {
-    marginLeft: 12,
-  },
-  weatherRow: {
+  avatar: { marginLeft: 12 },
+  moreInfo: { marginTop: 12, width: "100%" },
+  metricsRow: {
     flexDirection: "row",
-    alignItems: "flex-start",
-    marginTop: 8,
-    marginBottom: 8,
+    width: "100%",
+    alignItems: "stretch",
   },
   weatherBox: {
+    flex: 0.9,
     backgroundColor: "#222",
     borderRadius: 12,
     padding: 12,
-    minWidth: 150,
-    minHeight: 120,
-    justifyContent: "space-between",
-    alignItems: "flex-start",
+    justifyContent: "center",
     marginRight: 12,
-    position: "relative",
+    minHeight: 100,
+    overflow: "hidden",
   },
-  weatherIconBox: {
+  weatherIconBox: { 
     position: "absolute",
-    top: 0,
-    right: 8,
-  },
+    top: 6,
+    right: 6,
+   },
   weatherTempBox: {
     position: "absolute",
     bottom: 8,
     left: 12,
-    fontSize: 22,
-    color: "#fff",
-    fontWeight: "600",
-  },
-  forecastRow: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    justifyContent: "center",
-    gap: 8,
-    marginLeft: 12,
-    flex: 1,
-  },
-  forecastBox: {
-    backgroundColor: "#222",
-    borderRadius: 12,
-    padding: 8,
-    alignItems: "center",
-    minWidth: 48,
-    marginHorizontal: 2,
-  },
-  forecastTemp: {
-    fontSize: 16,
-    color: "#fff",
-    fontWeight: "500",
-    marginTop: 2,
-  },
-  moreInfo: {
-    marginTop: 16,
-    alignItems: "center",
-  },
-  label: {
-    fontSize: 16,
-    color: "#fff",
-    marginBottom: 6,
-  },
-  arrowContainer: {
-    marginTop: 12,
-    alignItems: "center",
-  },
-  arrow: {
     fontSize: 20,
-    color: "#a78bfa",
+    color: "#fff",
     fontWeight: "600",
+  },
+  detailColumn: {
+    flex: 1.4,
+    backgroundColor: "#1b1b1b",
+    borderRadius: 12,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    justifyContent: "center",
+  },
+  detailRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: "#2a2a2a",
+  },
+  lastDetailRow: { borderBottomWidth: 0 },
+  detailValue: { color: "#fff", fontSize: 14, fontWeight: "600", flexShrink: 1 },
+  dotsRow: {
+    flexDirection: "row",
+    justifyContent: "center",
+    marginTop: 6
+  },
+  dot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: "#555",
+    marginHorizontal: 3
+  },
+  dotActive: {
+    backgroundColor: "#c9a4f7"
+  },
+  fullOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.95)",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 12
+  },
+  fullContent: {
+    width: "100%",
+    height: "80%",
+    justifyContent: "center",
+    alignItems: "center",
+    position: "relative"
+  },
+  fullImage: {
+    width: "100%",
+    height: "100%"
+  },
+  closeBtn: {
+    position: "absolute",
+    top: 12,
+    right: 12,
+    backgroundColor: "rgba(255,255,255,0.18)",
+    borderRadius: 24,
+    padding: 6
+  },
+  fullCloseHit: {
+    position: "absolute",
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0
+  },
+  fullScreenNav: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    top: "50%",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    zIndex: 2
+  },
+  fullScreenArrow: {
+    padding: 8,
+    opacity: 0.8
   },
   swapImageButton: {
-    position: "absolute",
-    bottom: 8,
-    right: 8,
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    padding: 4,
-    elevation: 2,
+  position: "absolute",
+  bottom: 8,
+  right: 8,
+  backgroundColor: "#fff",
+  borderRadius: 16,
+  padding: 4,
+  elevation: 2,
   },
-
 });

@@ -1,5 +1,11 @@
 import * as React from 'react';
 
+type ActivityImage = {
+  id: string;
+  url: string;
+  createdAt: string;
+}
+
 type User = {
   id: string;
   username: string;
@@ -14,6 +20,7 @@ type User = {
   status?: string;
   avatarUrl?: string;
   activityImageUrl?: string;
+  activityImages?: ActivityImage[];
   birthday?: Date;
   anniversary?: Date;
   partner?: { name: string;
@@ -24,6 +31,7 @@ type User = {
     timezone: string;
     avatarUrl: string;
     activityImageUrl: string;
+    activityImages?: ActivityImage[];
     birthday?: Date;
     anniversary?: Date;
    } | null;

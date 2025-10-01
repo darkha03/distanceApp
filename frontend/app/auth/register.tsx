@@ -6,7 +6,7 @@ import { useAuthStore } from "@/store/authStore";
 import { saveToken } from "@/utils/storage";
 import { useRouter } from "expo-router";
 import * as React from "react";
-import { Pressable, TouchableOpacity, View, ActivityIndicator } from "react-native";
+import { Pressable, TouchableOpacity, View, ActivityIndicator, KeyboardAvoidingView, Platform } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
 export default function RegisterScreen() {
@@ -51,6 +51,10 @@ export default function RegisterScreen() {
     }
   } 
   return (
+    <KeyboardAvoidingView style={{ flex: 1 }} 
+    behavior={Platform.OS === "ios" ? "padding" : "height"}
+    keyboardVerticalOffset={Platform.OS === "ios" ? 60 : 0}
+    >
     <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
       <AppText style={{ fontSize: 24, fontWeight: "700", marginBottom: 24 }}>Register</AppText>
       <AppInput 
@@ -141,5 +145,6 @@ export default function RegisterScreen() {
         <AppText style={{ color: Colors.light.primary }}>Already have an account? Login</AppText>
       </TouchableOpacity>
     </View>
+    </KeyboardAvoidingView>
   );
 }

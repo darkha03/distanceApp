@@ -39,6 +39,7 @@ model User {
   partnerOf  User?   @relation("UserPartner")
   sentInvites     Invite[] @relation("SentInvites")
   receivedInvites Invite[] @relation("ReceivedInvites")
+  userImages  ActivityImage[] @relation("UserActivityImages")
 }
 
 model Invite {
@@ -54,4 +55,15 @@ model Invite {
 
   sender   User @relation("SentInvites", fields: [senderId], references: [id])
   receiver User @relation("ReceivedInvites", fields: [receiverId], references: [id])
+}
+
+model ActivityImage {
+  id        String   @id @default(uuid())
+  userId    String
+  url       String
+  createdAt DateTime @default(now())
+
+  user      User     @relation("UserActivityImages", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
 }

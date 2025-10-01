@@ -12,9 +12,10 @@ import {
   getResponseInvite,
   changePassword,
   updateUserStatus,
-  respondActivityImage,
   updateAnniversary,
-  uploadAvatar
+  uploadAvatar,
+  uploadActivityImages,
+  getActiveActivityImages
 } from "../controllers/userController.js";
 import { authMiddleware } from "../middleware/authMiddleware.js";
 
@@ -34,7 +35,7 @@ const storage = multer.diskStorage({
 
 const upload = multer({
   storage,
-  limits: { fileSize: 2 * 1024 * 1024 },
+  limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     if (!file.mimetype.startsWith("image/")) return cb(new Error("Only images"));
     cb(null, true);
@@ -43,14 +44,6 @@ const upload = multer({
 
 const router = express.Router();
 
-// DEBUG middleware around upload
-router.post(
-  "/activity-image",
-  authMiddleware,
-  upload.single("activityImage"),
-  respondActivityImage
-);
-
 router.post(
   "/avatar",
   authMiddleware,
@@ -58,8 +51,20 @@ router.post(
   uploadAvatar
 );
 
+router.post(
+  "/activity-images",
+  authMiddleware,
+  upload.array("activityImages", 5),
+  uploadActivityImages
+);
 
-router.put("/anniversary", authMiddleware, updateAnniversary);
+router.get(
+  "/:id/activity-images",
+  authMiddleware,
+  getActiveActivityImages
+);
+
+router.put("/anniversary", updateAnniversary);
 
 router.post("/add-partner", addPartner);
 

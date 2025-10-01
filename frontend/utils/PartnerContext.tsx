@@ -14,6 +14,7 @@ export interface PartnerData {
   anniversary?: Date;
   activityImageUrl?: string;
   avatarUrl?: string;
+  activityImages?: { id: string; url: string; createdAt: string }[];
 }
 
 export interface Invite {
@@ -166,8 +167,10 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
       patchPartner({ id: partnerId, status });
     });
 
-    socket.on("partner:activityImage", ({ userId, activityImageUrl }) => {
-      patchPartner({ id: userId, activityImageUrl });
+    socket.on("partner:activityImages", ({ userId, images }) => {
+      // images: [{id,url,createdAt}]
+      patchPartner({ id: userId, activityImages: images });
+      
     });
 
     socket.on("partner:update", (partnerData) => {
@@ -189,7 +192,7 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
       socket.off("partner:rejected");
       socket.off("partner:removed");
       socket.off("partner:status");
-      socket.off("partner:activityImage");
+      socket.off("partner:activityImages");
       socket.off("partner:update");
       socket.off("partner:anniversary");
     };
