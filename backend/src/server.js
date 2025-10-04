@@ -1,5 +1,5 @@
 import dotenv from "dotenv";
-import app from "./App.js";
+import app from "./app.js";
 import http from "http";
 import { initSocket } from "./utils/socket.js";
 import jwt from "jsonwebtoken";
