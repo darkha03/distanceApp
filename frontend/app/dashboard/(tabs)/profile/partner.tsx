@@ -17,7 +17,6 @@ export default function PartnerScreen() {
   const authContext = React.useContext(AuthContext);
   if (!authContext?.user) return null;
   const { user } = authContext;
-  const BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://localhost:4000';
 
   const handleAddPartner = async () => {
     try {
@@ -46,7 +45,7 @@ export default function PartnerScreen() {
         {/* Replace with actual avatar image if available */}
         <View style={styles.avatarCircle}>
           {user.partner?.avatarUrl ? (
-            <Image source={{ uri: `${BASE_URL}${user.partner.avatarUrl}` }} style={styles.avatarImg} />
+            <Image source={{ uri: `${user.partner.avatarUrl}` }} style={styles.avatarImg} />
           ) : (
             <Ionicons name="person-circle-outline" size={120} color={Colors.light.text} />
           )}

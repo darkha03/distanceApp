@@ -22,6 +22,7 @@ model User {
   name      String
   code      String   @unique
   avatarUrl String?
+  avatarPublicId  String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -62,6 +63,7 @@ model ActivityImage {
   id        String   @id @default(uuid())
   userId    String
   url       String
+  publicId  String
   createdAt DateTime @default(now())
 
   user      User     @relation("UserActivityImages", fields: [userId], references: [id], onDelete: Cascade)

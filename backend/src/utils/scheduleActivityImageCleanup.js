@@ -1,38 +1,38 @@
 import { PrismaClient } from "../generated/prisma/client.js";
-import fs from "fs";
-import path from "path";
+import cloudinary from "./cloudinary.js";
 import { getIO } from "./socket.js";
+
 const prismaCleanup = new PrismaClient();
 const CLEAN_INTERVAL_MS = 60 * 60 * 1000; // hourly
+const EXPIRY_MS = 24 * 60 * 60 * 1000;
 
 export function scheduleActivityImageCleanup() {
   setInterval(async () => {
-    const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
-    console.log("Running activity image cleanup, cutoff:", cutoff);
     try {
+      const cutoff = new Date(Date.now() - EXPIRY_MS);
       const expired = await prismaCleanup.activityImage.findMany({
         where: { createdAt: { lt: cutoff } },
-        select: { id: true, userId:true, url: true }
+        select: { id: true, publicId: true }
       });
-      console.log("Found expired images:", expired.length);
-      if (expired.length) {
-        for (const img of expired) {
-          if (img.url.startsWith("/uploads/activity/")) {
-            const abs = path.join(process.cwd(), img.url.replace(/^\/+/, ""));
-            fs.promises.unlink(abs).catch(()=>{});
-          }
-        }
-        const io = getIO();
-        expired.forEach(img => {
-          io.emit("activityImageDeleted", { id: img.id });
-        });
-        await prismaCleanup.activityImage.deleteMany({
-          where: { id: { in: expired.map(e => e.id) } }
-        });
-        console.log("Cleaned expired activity images:", expired.length);
+      if (!expired.length) return;
+      const io = getIO();
+      io.emit("activityImages:expired", expired.map(e => e.id));
+      await prismaCleanup.activityImage.deleteMany({
+        where: { id: { in: expired.map(e => e.id) } }
+      });
+      const publicIds = expired.filter(e => e.publicId).map(e => e.publicId);
+      for (const chunk of chunkArray(publicIds, 100)) {
+        await cloudinary.api.delete_resources(chunk).catch(()=>{});
       }
+      console.log("Cleaned expired activity images:", expired.length);
     } catch (e) {
       console.error("Cleanup error:", e.message);
     }
   }, CLEAN_INTERVAL_MS);
+}
+
+function chunkArray(arr, size) {
+  const out = [];
+  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
+  return out;
 }

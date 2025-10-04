@@ -151,7 +151,7 @@ export default function ProfileScreen() {
       const data = await res.json();
       if (res.ok && data.avatarUrl) {
         const relative = data.avatarUrl;
-        setAvatar(`${BASE_URL}${data.avatarUrl}`);
+        setAvatar(`${data.avatarUrl}`);
         setField("avatar", relative);
         authCtx.setUser({ ...user, avatarUrl: relative });
         setMessage("Avatar updated");
@@ -230,7 +230,7 @@ export default function ProfileScreen() {
         {/* Avatar Section */}
         <View style={styles.avatarWrap}>
           <View style={styles.avatarRing}>
-            <Image source={{ uri: `${BASE_URL}${avatar}` }} style={styles.avatarImg} />
+            <Image source={{ uri: `${avatar}` }} style={styles.avatarImg} />
           </View>
           <Pressable style={styles.changeAvatarBtn} onPress={handleChangeAvatar}>
             <AppText style={styles.changeAvatarText}>Change Avatar</AppText>

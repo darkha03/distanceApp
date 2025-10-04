@@ -169,7 +169,7 @@ export function PartnerInfoCard() {
               style={{ width: IMAGE_SIZE, height: IMAGE_SIZE, marginRight: 8 }}
             >
               <Image
-                source={{ uri: `${BASE_URL}${item.url}` }}
+                source={{ uri: `${item.url}` }}
                 style={{ width: "100%", height: "100%", borderRadius: 10 }}
               />
             </TouchableOpacity>
@@ -287,7 +287,7 @@ export function PartnerInfoCard() {
             )}
             {activityImages[fullScreenIndex] && (
               <Image
-                source={{ uri: `${BASE_URL}${activityImages[fullScreenIndex].url}` }}
+                source={{ uri: `${activityImages[fullScreenIndex].url}` }}
                 style={styles.fullImage}
                 resizeMode="contain"
               />

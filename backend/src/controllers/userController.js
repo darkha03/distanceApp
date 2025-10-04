@@ -1,11 +1,10 @@
 import { PrismaClient } from "../generated/prisma/client.js";
 import { getIO } from "../utils/socket.js";
 import { hashPassword } from "../utils/hash.js";
-import fs from "fs";
-import path from "path";
+import cloudinary, { uploadBuffer } from "../utils/cloudinary.js";
 
 const prisma = new PrismaClient();
-const EXPIRY_MS = 24 * 60 * 64 * 1000; // 24 hours
+const EXPIRY_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 function activityCutoffDate() {
     return new Date(Date.now() - EXPIRY_MS);
@@ -452,46 +451,40 @@ export async function uploadAvatar(req, res) {
     if (!req.file) return res.status(400).json({ error: "No image" });
     const userId = req.user.userId;
 
-    const existing= await prisma.user.findUnique({
-        where: { id: userId },
-        select: { avatarUrl: true }
+    // Upload buffer to Cloudinary (folder optional)
+    const result = await uploadBuffer(req.file.buffer, {
+      folder: "myapp/avatars",
+      transformation: [{ width: 400, height: 400, crop: "fill", gravity: "face" }]
     });
 
-    const relativePath = `/uploads/avatars/${req.file.filename}`;
+    // Fetch existing to delete old avatar (if stored in Cloudinary)
+    const existing = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { avatarPublicId: true }
+    });
+
     const updated = await prisma.user.update({
       where: { id: userId },
-      data: { avatarUrl: relativePath },
-      select: {
-        id: true,
-        username: true,
-        avatarUrl: true,
-        partnerId: true
-      }
+      data: {
+        avatarUrl: result.secure_url,
+        avatarPublicId: result.public_id
+      },
+      select: { id: true, username: true, avatarUrl: true, avatarPublicId: true, partnerId: true }
     });
-    // Notify partner (merge-friendly partial)
+
+    // Delete old on Cloudinary
+    if (existing?.avatarPublicId && existing.avatarPublicId !== result.public_id) {
+      cloudinary.uploader.destroy(existing.avatarPublicId).catch(()=>{});
+    }
+
     if (updated.partnerId) {
       const io = getIO();
       io.to(updated.partnerId).emit("partner:update", {
         id: userId,
-        avatarUrl: relativePath
+        avatarUrl: updated.avatarUrl
       });
     }
-    res.json({ avatarUrl: relativePath });
-    console.log("Avatar uploaded:", updated);
-    // Optionally delete old avatar file
-    if (existing?.avatarUrl &&
-        existing.avatarUrl !== relativePath &&
-        existing.avatarUrl.startsWith("/uploads/avatars/") &&
-        !existing.avatarUrl.includes("..")) {
-        const oldPath = path.join(process.cwd(), existing.avatarUrl.replace(/^\/+/, ""));
-        fs.promises.unlink(oldPath)
-        .then(() => {
-            console.log("Old avatar deleted:", oldPath);
-        })
-        .catch(err => {
-            console.error("Failed to delete old avatar:", err);
-        });
-    }
+    res.json({ avatarUrl: updated.avatarUrl });
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: "Avatar upload failed" });
@@ -505,35 +498,56 @@ export async function uploadActivityImages(req, res) {
       return res.status(400).json({ error: "No images" });
     }
 
-    // Clean expired for this user before adding new (lazy cleanup)
+    // Lazy cleanup expired (DB only, Cloudinary deletion handled separately)
     await prisma.activityImage.deleteMany({
-      where: {
-        userId,
-        createdAt: { lt: activityCutoffDate() }
-      }
+      where: { userId, createdAt: { lt: activityCutoffDate() } }
     });
 
-    const recordsData = req.files.map(f => ({
-      userId,
-      url: `/uploads/activity/${f.filename}`
-    }));
-
-    const created = await prisma.$transaction(
-      recordsData.map(d => prisma.activityImage.create({ data: d }))
+    // Upload each buffer
+    const uploads = await Promise.all(
+      req.files.map(f =>
+        uploadBuffer(f.buffer, {
+          folder: "myapp/activity",
+          transformation: [{ width: 1080, height: 1080, crop: "limit" }]
+        })
+      )
     );
 
-    // Notify partner (send only metadata to reduce payload)
-    const user = await prisma.user.findUnique({ where: { id: userId }, select: { partnerId: true } });
-    if (user?.partnerId) {
+    const created = await prisma.$transaction(
+      uploads.map(u =>
+        prisma.activityImage.create({
+          data: {
+            userId,
+            url: u.secure_url,
+            publicId: u.public_id
+          }
+        })
+      )
+    );
+
+    const partnerInfo = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { partnerId: true }
+    });
+
+    if (partnerInfo?.partnerId) {
       const io = getIO();
-      io.to(user.partnerId).emit("partner:activityImages", {
+      io.to(partnerInfo.partnerId).emit("partner:activityImages", {
         userId,
-        images: created.map(c => ({ id: c.id, url: c.url, createdAt: c.createdAt }))
+        images: created.map(c => ({
+          id: c.id,
+          url: c.url,
+          createdAt: c.createdAt
+        }))
       });
     }
 
     res.json({
-      uploaded: created.map(c => ({ id: c.id, url: c.url, createdAt: c.createdAt }))
+      uploaded: created.map(c => ({
+        id: c.id,
+        url: c.url,
+        createdAt: c.createdAt
+      }))
     });
   } catch (e) {
     console.error(e);
@@ -541,29 +555,29 @@ export async function uploadActivityImages(req, res) {
   }
 }
 
-// NEW: get active (non-expired) images for a user
 export async function getActiveActivityImages(req, res) {
   try {
     const { id } = req.params;
-    // You may want to ensure caller is the user or their partner (authorization check)
     const cutoff = activityCutoffDate();
 
-    // Lazy delete expired (global for this user)
+    // Purge expired (DB + Cloudinary)
     const expired = await prisma.activityImage.findMany({
-      where: { userId: id, createdAt: { lt: cutoff } }
+      where: { userId: id, createdAt: { lt: cutoff } },
+      select: { id: true, publicId: true }
     });
 
     if (expired.length) {
-      // Remove files
-      expired.forEach(img => {
-        if (img.url.startsWith("/uploads/activity/")) {
-          const abs = path.join(process.cwd(), img.url.replace(/^\/+/, ""));
-          fs.promises.unlink(abs).catch(()=>{});
-        }
-      });
       await prisma.activityImage.deleteMany({
-        where: { userId: id, createdAt: { lt: cutoff } }
+        where: { id: { in: expired.map(e => e.id) } }
       });
+      // Batch destroy
+      const publicIds = expired.filter(e => e.publicId).map(e => e.publicId);
+      if (publicIds.length) {
+        // Cloudinary bulk delete
+        for (const chunk of chunkArray(publicIds, 100)) {
+          cloudinary.api.delete_resources(chunk).catch(()=>{});
+        }
+      }
     }
 
     const active = await prisma.activityImage.findMany({
@@ -576,6 +590,13 @@ export async function getActiveActivityImages(req, res) {
     console.error(e);
     res.status(500).json({ error: "Fetch failed" });
   }
+}
+
+// Helper for chunking
+function chunkArray(arr, size) {
+  const out = [];
+  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
+  return out;
 }
 
 export async function setStatusImageSet(req, res) {

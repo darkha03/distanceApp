@@ -14,7 +14,6 @@ export default function ProfileScreen() {
   const router = useRouter();
   const authContext = React.useContext(AuthContext);
   const [copied, setCopied] = React.useState(false);
-  const BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://localhost:4000';
   if (!token || !authContext?.user) {
     return null;
   }
@@ -42,7 +41,7 @@ export default function ProfileScreen() {
       {/* Avatar */}
       <View style={styles.avatarWrapper}>
         {user.avatarUrl ? (
-          <Image source={{ uri: `${BASE_URL}${user.avatarUrl}` }} style={styles.avatarImg} />
+          <Image source={{ uri: `${user.avatarUrl}` }} style={styles.avatarImg} />
         ) : (
           <Ionicons name="person-circle-outline" size={120} color={Colors.light.text} />
         )}
