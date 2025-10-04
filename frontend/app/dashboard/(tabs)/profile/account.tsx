@@ -1,5 +1,5 @@
 import React, { useState, useContext } from "react";
-import { View, StyleSheet, Modal, TextInput, Pressable, ScrollView, Platform, KeyboardAvoidingView } from "react-native";
+import { View, StyleSheet, Modal, TextInput, Pressable, ScrollView, Platform, KeyboardAvoidingView, Image } from "react-native";
 import { AuthContext } from "@/utils/authContext";
 import { useAuthStore } from "@/store/authStore";
 import { Colors } from "@/constants/Colors";
@@ -9,8 +9,16 @@ import { FieldRow } from "@/components/app/FieldRow";
 import { router } from "expo-router";
 import { removeToken } from "@/utils/storage";
 import { Ionicons } from "@expo/vector-icons";
+import { statusImageMap } from "@/utils/statusImage";
 
 const BORDER = Colors.light.primary;
+const IMAGE_SET_OPTIONS = [
+  { key: "default", label: "Default" },
+  { key: "1", label: "Set 1" },
+  { key: "2", label: "Set 2" },
+];
+const PREVIEW_STATUSES = ["sleep", "study", "relax", "play"] as const;
+type StatusKey = typeof PREVIEW_STATUSES[number];
 
 export default function AccountScreen() {
   const { token, clearToken } = useAuthStore();
@@ -27,6 +35,13 @@ export default function AccountScreen() {
   const [message, setMessage] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  type ImageSetKey = keyof typeof statusImageMap;
+  const [imageSet, setImageSet] = useState<ImageSetKey>(user.statusImageSet as ImageSetKey || "default"); // Add state
+  const previewImages = PREVIEW_STATUSES.map(
+    status =>
+      statusImageMap[imageSet]?.[status as StatusKey] ||
+      statusImageMap["default"]?.[status as StatusKey]
+  );
 
   const clearMessageSoon = () => setTimeout(()=>setMessage(""),2000);
 
@@ -85,6 +100,29 @@ export default function AccountScreen() {
     }
   };
 
+  // Add handler to update imageSet (and optionally send to backend)
+  const handleImageSetChange = async (val: string) => {
+    setImageSet(val as ImageSetKey);
+    // Optionally: send to backend to persist
+    try {
+      const res = await fetch(`${BASE_URL}/api/users/${user.id}/status-image-set`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ statusImageSet: val }),
+      });
+      if (res.ok) {
+        // Optionally update user in context
+        authCtx.setUser({ ...user, statusImageSet: val });
+      }
+    } catch {
+      setMessage("Failed to update image set");
+      clearMessageSoon();
+    }
+  };
+
   return (
     <KeyboardAvoidingView
       style={{ flex:1, backgroundColor:"#000" }}
@@ -137,6 +175,66 @@ export default function AccountScreen() {
             }
             isLast
           />
+        </View>
+
+        {/* Add UI field for status image set */}
+        {/* Status Image Style Section */}
+        <SectionHeader title="Status Image Style" editing={true} onEdit={() => {}} />
+        <View style={styles.box}>
+          <FieldRow
+            left="Image Set"
+            rightComponent={
+              <View style={styles.pillContainer}>
+                {IMAGE_SET_OPTIONS.map((opt, idx) => (
+                  <Pressable
+                    key={opt.key}
+                    style={[
+                      styles.pillOption,
+                      imageSet === opt.key && styles.pillOptionActive,
+                      idx === 0 && styles.pillLeft,
+                      idx === IMAGE_SET_OPTIONS.length - 1 && styles.pillRight,
+                    ]}
+                    onPress={() => handleImageSetChange(opt.key)}
+                  >
+                    <AppText
+                      style={[
+                        styles.pillText,
+                        imageSet === opt.key && styles.pillTextActive,
+                      ]}
+                    >
+                      {opt.label}
+                    </AppText>
+                  </Pressable>
+                ))}
+              </View>
+            }
+            isLast
+          />
+          {/* Preview field below pill selector */}
+          {/* Preview field below pill selector */}
+          <View style={styles.previewRow}>
+            <AppText style={styles.previewLabel}>Preview:</AppText>
+            <View style={styles.previewImagesWrap}>
+              {previewImages.map((img, idx) =>
+                img ? (
+                  <View key={PREVIEW_STATUSES[idx]} style={styles.previewImageItem}>
+                    <Image
+                      source={img}
+                      style={styles.previewImage}
+                      resizeMode="contain"
+                    />
+                    <AppText style={styles.previewStatusLabel}>
+                      {PREVIEW_STATUSES[idx].charAt(0).toUpperCase() + PREVIEW_STATUSES[idx].slice(1)}
+                    </AppText>
+                  </View>
+                ) : (
+                  <View key={PREVIEW_STATUSES[idx]} style={styles.previewImageItem}>
+                    <AppText style={styles.previewLabel}>No image</AppText>
+                  </View>
+                )
+              )}
+            </View>
+          </View>
         </View>
       </ScrollView>
 
@@ -303,5 +401,86 @@ const styles = StyleSheet.create({
     alignItems:"center",
     marginTop:10
   },
-  modalBtnSecondaryText:{ color:"#fff", fontWeight:"500" }
+  modalBtnSecondaryText:{ color:"#fff", fontWeight:"500" },
+  pillContainer: {
+  flexDirection: "row",
+  backgroundColor: "#222",
+  borderRadius: 20,
+  borderWidth: 1,
+  borderColor: BORDER,
+  overflow: "hidden",
+  minWidth: 180,
+  height: 36,
+  },
+  pillOption: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 6,
+    backgroundColor: "#222",
+  },
+  pillOptionActive: {
+    backgroundColor: BORDER,
+  },
+  pillText: {
+    color: "#fff",
+    fontWeight: "500",
+    fontSize: 13,
+  },
+  pillTextActive: {
+    color: "#222",
+    fontWeight: "700",
+  },
+  pillLeft: {
+    borderTopLeftRadius: 20,
+    borderBottomLeftRadius: 20,
+  },
+  pillRight: {
+    borderTopRightRadius: 20,
+    borderBottomRightRadius: 20,
+  },
+  previewRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 18,
+    marginBottom: 6,
+    paddingHorizontal: 8,
+  },
+  previewLabel: {
+    color: "#aaa",
+    fontSize: 14,
+    marginRight: 12,
+    fontWeight: "500",
+  },
+  previewImageWrap: {
+    backgroundColor: "#181818",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: BORDER,
+    padding: 6,
+    alignItems: "center",
+    justifyContent: "center",
+    minWidth: 60,
+    minHeight: 60,
+  },
+  previewImage: {
+    width: 48,
+    height: 48,
+    borderRadius: 8,
+  },
+  previewImagesWrap: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  previewImageItem: {
+    alignItems: "center",
+    marginHorizontal: 4,
+  },
+  previewStatusLabel: {
+    color: "#888",
+    fontSize: 12,
+    marginTop: 4,
+    textAlign: "center",
+  },
 });

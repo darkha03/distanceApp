@@ -29,6 +29,7 @@ export function PartnerInfoCard() {
   // Use partner.activityImages (array of {id, url, createdAt})
   const activityImages = partner.activityImages || [];
   const [currentIndex, setCurrentIndex] = useState(0);
+  const imageSet = partner.statusImageSet || "default";
 
   useEffect(() => {
     const update = () => {
@@ -102,6 +103,21 @@ export function PartnerInfoCard() {
     return diff >= 0 ? diff : 0;
   }, [user.anniversary]);
 
+    const getImageAge = (createdAt) => {
+    if (!createdAt) return "";
+    const now = Date.now();
+    const created = new Date(createdAt).getTime();
+    const diffMs = now - created;
+    const diffSec = Math.floor(diffMs / 1000);
+    if (diffSec < 60) return `${diffSec}s ago`;
+    const diffMin = Math.floor(diffSec / 60);
+    if (diffMin < 60) return `${diffMin}m ago`;
+    const diffHr = Math.floor(diffMin / 60);
+    if (diffHr < 24) return `${diffHr}h ago`;
+    const diffDay = Math.floor(diffHr / 24);
+    return `${diffDay}d ago`;
+  };
+
   // Fullscreen modal handlers
   const openFullScreen = (index) => {
     setFullScreenIndex(index);
@@ -114,9 +130,9 @@ export function PartnerInfoCard() {
   // Render swipeable activity images
   const renderActivityImages = () => {
     if (!activityImages.length || !showActivityImages) {
-      return partner.status && statusImageMap[partner.status] ? (
+      return partner.status && statusImageMap[imageSet][partner.status] ? (
         <Image
-          source={statusImageMap[partner.status]}
+          source={statusImageMap[imageSet][partner.status]}
           style={{ width: IMAGE_SIZE, height: IMAGE_SIZE, borderRadius: 10 }}
           resizeMode="contain"
         />
@@ -188,7 +204,7 @@ export function PartnerInfoCard() {
         </View>
         <View style={{ flex: 1, alignItems: "center", position: "relative" }}>
           {renderActivityImages()}
-          {(activityImages.length && statusImageMap[partner.status]) ? (
+          {(activityImages.length && statusImageMap[imageSet][partner.status]) ? (
             <TouchableOpacity
               style={styles.swapImageButton}
               onPress={() => setShowActivityImages(v => !v)}
@@ -258,8 +274,17 @@ export function PartnerInfoCard() {
         onRequestClose={closeFullScreen}
       >
         <View style={styles.fullOverlay}>
-          <Pressable style={styles.fullCloseHit} onPress={closeFullScreen} />
-          <View style={styles.fullContent}>
+          <Pressable 
+            style={styles.fullCloseHit} 
+            onPress={closeFullScreen} 
+            pointerEvents="box-only"
+          />
+          <View style={styles.fullContent} pointerEvents="box-none">
+            {activityImages[fullScreenIndex] && (
+              <AppText style={styles.imageAgeText}>
+                {getImageAge(activityImages[fullScreenIndex].createdAt)}
+              </AppText>
+            )}
             {activityImages[fullScreenIndex] && (
               <Image
                 source={{ uri: `${BASE_URL}${activityImages[fullScreenIndex].url}` }}
@@ -287,7 +312,6 @@ export function PartnerInfoCard() {
               <Ionicons name="close" size={26} color="#fff" />
             </TouchableOpacity>
           </View>
-          <Pressable style={styles.fullCloseHit} onPress={closeFullScreen} />
         </View>
       </Modal>
     </AppCard>

@@ -15,7 +15,8 @@ import {
   updateAnniversary,
   uploadAvatar,
   uploadActivityImages,
-  getActiveActivityImages
+  getActiveActivityImages,
+  setStatusImageSet
 } from "../controllers/userController.js";
 import { authMiddleware } from "../middleware/authMiddleware.js";
 
@@ -78,6 +79,7 @@ router.post("/password", changePassword);
 
 router.put("/status", updateUserStatus);
 
+router.put("/:id/status-image-set", setStatusImageSet);
 
 
 // Get user by ID

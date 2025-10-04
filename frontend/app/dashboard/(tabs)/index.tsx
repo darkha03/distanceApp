@@ -35,12 +35,16 @@ export default function DashboardScreen() {
         {/* My Activity */}
         <ActivityCard />
 
-        {/* Special Events */}
-        <AppCard style={styles.card} title="Special Events">
+        {/* Special Events
+        
+          <AppCard style={styles.card} title="Special Events">
           <View style={styles.section}>
             <AppText>Anniversary 🎉 - in 5 days</AppText>
           </View>
         </AppCard>
+
+        */}
+        
       </ScrollView>
     </KeyboardAvoidingView>
   );

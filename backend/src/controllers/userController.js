@@ -15,7 +15,6 @@ function activityCutoffDate() {
 // Return user with partner info
 export async function getUserProfile(req, res) {
     try {
-        console.log("Fetching user profile");
         const id = req.user.userId;
         const user = await prisma.user.findUnique({
             where: { id },
@@ -33,6 +32,7 @@ export async function getUserProfile(req, res) {
                 timezone: true,
                 birthday: true,
                 activityImageUrl: true,
+                statusImageSet: true,
                 avatarUrl: true,
                 partner: {
                     select: {
@@ -44,6 +44,7 @@ export async function getUserProfile(req, res) {
                         timezone: true,
                         birthday: true,
                         activityImageUrl: true,
+                        statusImageSet: true,
                         avatarUrl: true,
                     }
                 }
@@ -230,8 +231,7 @@ export async function addPartner(req, res) {
 // Return pending invite details 
 export async function getInvite(req, res) {
     try {
-        const userId = req.user.userId;
-        console.log("Getting invite for user:", userId);
+        const userId = req.user.userId
         const invite = await prisma.invite.findMany({
             where: {
                 receiverId: userId,
@@ -247,7 +247,6 @@ export async function getInvite(req, res) {
                 }
             }
         });
-        console.log("Fetching invite for user:", userId, invite);
         if (!invite || invite.length === 0) {
             return res.status(404).json({ error: "No pending invite found" });
         }
@@ -276,7 +275,7 @@ export async function respondInvite(req, res) {
             },
             orderBy: { createdAt: "desc" },
         });
-        console.log("Responding to invite:", invite);
+        //console.log("Responding to invite:", invite);
         if (!invite) {
             return res.status(404).json({ error: "No pending invite found" });
         }
@@ -576,5 +575,31 @@ export async function getActiveActivityImages(req, res) {
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: "Fetch failed" });
+  }
+}
+
+export async function setStatusImageSet(req, res) {
+  try {
+    const userId = req.user.userId;
+    const { statusImageSet } = req.body; // e.g., "default", "1", "2", etc.
+    const validSets = ["default", "1", "2"]; // Define valid sets
+    if (!validSets.includes(statusImageSet)) {
+      return res.status(400).json({ error: "Invalid status image set" });
+    }
+    const updated = await prisma.user.update({
+      where: { id: userId },
+      data: { statusImageSet },
+      select: { id: true, statusImageSet: true }
+    });
+    res.json(updated);
+    const socket = getIO();
+    // Notify partner via WebSocket
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (user.partnerId) {
+        socket.to(user.partnerId).emit("partner:update", { id: userId, statusImageSet });
+    }
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "Update failed" });
   }
 }

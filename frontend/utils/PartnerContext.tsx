@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 import { useAuthStore } from "@/store/authStore";
 import { AuthContext } from "./authContext";
 import { SocketContext } from "./SocketContext";
-
+import type {ActivityImage} from "./authContext";
 
 export interface PartnerData {
   id: string;
@@ -168,9 +168,28 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
     });
 
     socket.on("partner:activityImages", ({ userId, images }) => {
-      // images: [{id,url,createdAt}]
-      patchPartner({ id: userId, activityImages: images });
-      
+      patchPartner((prevPartner: any) => {
+        // If no previous images, just use incoming
+        const prevImages = prevPartner?.activityImages || [];
+        // Merge by id, keeping unique and sorting by createdAt
+        const map = new Map<string, any>();
+        prevImages.forEach((img: ActivityImage) => map.set(img.id, img));
+        images.forEach((img: ActivityImage)  => map.set(img.id, img));
+        const mergedImages = Array.from(map.values()).sort(
+          (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        );
+        return { id: userId, activityImages: mergedImages };
+      });
+    });
+
+    socket.on("activityImages:expired", ({ expiredImageIds }) => {
+      patchPartner((prevPartner: any) => {
+        if (!prevPartner?.activityImages) return prevPartner;
+        const filteredImages = prevPartner.activityImages.filter(
+          (img: ActivityImage) => !expiredImageIds.includes(img.id)
+        );
+        return { activityImages: filteredImages };
+      });
     });
 
     socket.on("partner:update", (partnerData) => {

@@ -1,5 +1,5 @@
 import React, { useState, useContext } from "react";
-import { View, TouchableOpacity, StyleSheet, Image, FlatList, Dimensions } from "react-native";
+import { View, TouchableOpacity, StyleSheet, Image, FlatList } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "@/constants/Colors";
 import { AppCard } from "@/components/AppCard";
@@ -9,6 +9,7 @@ import { useAuthStore } from "@/store/authStore";
 import { AuthContext } from "@/utils/authContext";
 import * as ImagePicker from 'expo-image-picker';
 import { statusImageMap } from "@/utils/statusImage";
+import * as ImageManipulator from 'expo-image-manipulator';
 
 export const ActivityCard = () => {
   const { token } = useAuthStore();
@@ -27,6 +28,7 @@ export const ActivityCard = () => {
   const [activityImages, setActivityImages] = useState(user.activityImages || []); // new
   const IMAGE_SIZE = 160;
   const [currentIndex, setCurrentIndex] = useState(0);
+  const imageSet = user.statusImageSet || "default";
 
 {/*  const handlePostThought = () => {
     if (newThought.trim()) {
@@ -37,20 +39,37 @@ export const ActivityCard = () => {
       // For now, we just update the local state
     }
   };*/}
+
+  const resizeImage = async (uri) => {
+    try {
+      const result = await ImageManipulator.manipulateAsync(
+        uri,
+        [{ resize: { width: 1080 } }], // Resize to width of 800px, height auto
+        { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG }
+      );
+      return result.uri;
+    } catch (e) {
+      console.log("Image resize error:", e);
+      return uri; // Fallback to original if resize fails
+    }
+  };
   const uploadActivityImages = async (uris) => {
     try {
       if (!uris.length) return;
       const form = new FormData();
-      uris.forEach((uri, idx) => {
-        const name = uri.split("/").pop() || `activity-${idx}.jpg`;
+
+      for (let idx = 0; idx < uris.length; idx++) {
+        const originalUri = uris[idx];
+        const resizedUri = await resizeImage(originalUri); // <-- resize here
+        const name = originalUri.split("/").pop() || `activity-${idx}.jpg`;
         const ext = (name.split(".").pop() || "jpg").toLowerCase();
         const type = ext === "jpg" ? "image/jpeg" : `image/${ext}`;
         form.append("activityImages", {
-          uri: uri.startsWith("file://") ? uri : `file://${uri}`,
+          uri: resizedUri.startsWith("file://") ? resizedUri : `file://${resizedUri}`,
           name,
-            type
+          type
         });
-      });
+      }
 
       const res = await fetch(`${BASE_URL}/api/users/activity-images`, {
         method: "POST",
@@ -109,9 +128,9 @@ export const ActivityCard = () => {
   };
   const renderActivityCarousel = () => {
     if (!activityImages.length) {
-      return user.status && statusImageMap[user.status] ? (
+      return user.status && statusImageMap[imageSet][user.status] ? (
         <Image
-          source={statusImageMap[user.status]}
+          source={statusImageMap[imageSet][user.status]}
           style={{ width: IMAGE_SIZE, height: IMAGE_SIZE, borderRadius: 10 }}
           resizeMode="contain"
         />
