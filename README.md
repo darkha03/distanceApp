@@ -13,7 +13,7 @@ Cross‑platform couple / partner activity tracker with real‑time status, expi
 - Tooling: Prisma Migrate, dotenv.
 
 ## Monorepo Structure
-
+```
 my-app/ 
 ├── backend/ 
 │ ├── prisma/ 
@@ -40,7 +40,7 @@ my-app/
 │ ├── assets/ 
 │ └── README.md
 └── README.md
-
+```
 ## Key Features
 
 - Multi activity images (stories style) per user (24h lifetime).
