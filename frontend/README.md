@@ -17,6 +17,7 @@ Cross‑platform partner activity app UI with:
 - Cloudinary image URLs (no local file serving)
 
 ## Project Structure
+```
 frontend/ 
 ├─ app/ # Expo Router (screens & layouts) 
 │ ├─ auth/ # Login / Register 
@@ -28,7 +29,7 @@ frontend/
 ├─ assets/ # Images / status sets 
 ├─ package.json 
 └─ README.md
-
+```
 ## Key Screens / Components
 | Component | Purpose |
 |-----------|---------|
