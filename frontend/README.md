@@ -1,81 +1,83 @@
-# Welcome to your Expo app 👋
+# Frontend (Expo / React Native)
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Cross‑platform partner activity app UI with:
+- Realtime partner status & images (Socket.IO)
+- Expiring activity images (24h, swipe + full screen)
+- Status image theme sets (default / 1 / 2) with live preview
+- Weather + timezone display
+- Auth (JWT) + partner linking
+- Cloudinary-hosted images (secure URLs)
 
-## Get started
+## Tech Stack
+- React Native (Expo Router)
+- TypeScript / JavaScript mix
+- Context API (AuthContext, PartnerContext)
+- Socket.IO client
+- UI primitives (custom App* components)
+- Cloudinary image URLs (no local file serving)
 
-1. Install dependencies
+## Project Structure
+frontend/ 
+├─ app/ # Expo Router (screens & layouts) 
+│ ├─ auth/ # Login / Register 
+│ └─ dashboard/(tabs)/ # Tabbed main UI 
+├─ features/ # Feature cards (Activity, Partner info, etc.) 
+├─ components/ # Reusable UI 
+├─ utils/ # Contexts, helpers, statusImage map 
+├─ constants/ # Theme tokens 
+├─ assets/ # Images / status sets 
+├─ package.json 
+└─ README.md
 
-   ```bash
-   npm install
-   ```
+## Key Screens / Components
+| Component | Purpose |
+|-----------|---------|
+| ActivityCard | Upload & preview multiple activity images (stories style) |
+| PartnerInfoCard | Partner status, images carousel, weather, time |
+| AddPartnerCard | Invite / link partner |
+| Status image set selector | Pill control + 4‑image preview |
 
-2. Start the app
 
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+## Install & Run
 
 ```bash
-npm run reset-project
+npm install
+npx expo start
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+## Contexts
+| Context | Holds |
+|---------|-------|
+| AuthContext | user, token, setUser, login/logout |
+| PartnerContext | partner live data, socket merge logic |
 
-## Learn more
+Merge strategy: append new activity images by id, keep unique, sort by `createdAt`.
 
-To learn more about developing your project with Expo, look at the following resources:
+## Socket Events (Client Listening)
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+partner:activityImages # New images only (incremental) 
+partner:update # General partner field update (avatar/status) 
+partner:status # Legacy status event 
+activityImages:expired # (Optional) cleanup notifications
 
-## Join the community
+## Styling Conventions
+- Dark theme base
+- Primary accent: `Colors.light.primary`
+- Cards: consistent padding + rounded corners
+- Pills: segmented pressable with active background
 
-Join our community of developers creating universal apps.
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+## Useful Commands
+| Action | Command |
+|--------|---------|
+| Install deps | `npm install` |
+| Start dev server | `npx expo start` |
+| Clear Expo cache | `npx expo start -c` |
+| Add RN lib (Expo) | `npx expo install <pkg>` |
+| Prebuild (bare) | `npx expo prebuild` |
 
-frontend/
-├── app/
-│   ├── _layout.tsx
-│   ├── auth/
-│   │   ├── login.tsx
-│   │   └── register.tsx
-│   └── dashboard/
-│       └── (tabs)/
-│           ├── _layout.tsx
-│           └── index.tsx
-├── components/
-│   ├── AppButton.tsx
-│   ├── AppInput.tsx
-│   ├── AppText.tsx
-│   ├── AppCard.tsx
-├── features/
-│   ├── AddPartnerCard.jsx
-│   ├── PartnerInfoCard.jsx
-├── utils/
-│   ├── authContext.ts
-│   ├── AuthProvider.js
-│   ├── PartnerContext.jsx
-│   └── SocketContext.js
-├── constants/
-│   ├── Colors.ts
-│   ├── Typography.ts
-│   ├── Spacing.ts
-├── package.json
-├── README.md
-└── ...other config and asset files
+## Production Builds (EAS)
+
+`eas build --platform android `
+`eas build --platform ios`
+(Requires EAS setup & login.)
