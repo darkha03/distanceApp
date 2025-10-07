@@ -13,6 +13,10 @@ export async function register(req, res) {
   try {
     const { email, password, username, name } = req.body;
 
+    if (!email || !password || !username || !name) {
+      return res.status(400).json({ error: "Please fill in all fields" });
+    }
+
     // Check if email exists
     const existingEmail = await prisma.user.findUnique({ where: { email } });
     if (existingEmail) {
@@ -57,6 +61,10 @@ export async function login(req, res) {
   try {
     const { username, password } = req.body;
 
+    if (!username || !password) {
+      return res.status(400).json({ error: "Please fill in both username and password" });
+    }
+    
     // Find user
     const user = await prisma.user.findUnique({ where: { username } });
     if (!user) {

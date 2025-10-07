@@ -3,7 +3,6 @@ import app from "./app.js";
 import http from "http";
 import { initSocket } from "./utils/socket.js";
 import jwt from "jsonwebtoken";
-import { scheduleActivityImageCleanup } from "./utils/scheduleActivityImageCleanup.js";
 
 dotenv.config(); ;
 
@@ -12,8 +11,6 @@ const PORT = process.env.PORT || 4000;
 const server = http.createServer(app);
 
 const io = initSocket(server);
-
-scheduleActivityImageCleanup();
 
 io.use((socket, next) => {
   const token = socket.handshake.auth.token;

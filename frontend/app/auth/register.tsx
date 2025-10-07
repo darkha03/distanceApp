@@ -6,8 +6,9 @@ import { useAuthStore } from "@/store/authStore";
 import { saveToken } from "@/utils/storage";
 import { useRouter } from "expo-router";
 import * as React from "react";
-import { Pressable, TouchableOpacity, View, ActivityIndicator, KeyboardAvoidingView, Platform } from "react-native";
+import { Pressable, View, ActivityIndicator, KeyboardAvoidingView, Platform } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function RegisterScreen() {
   const [username, setUsername] = React.useState("");
@@ -25,8 +26,21 @@ export default function RegisterScreen() {
   const handleRegister = async () => {
     setLoading(true);
     setError("");
+    
+    // Check if all fields are filled
+    if (!username.trim() || !email.trim() || !name.trim() || !password.trim() || !confirmPassword.trim()) {
+      setError("Please fill in all fields.");
+      setLoading(false);
+      return;
+    }
+    if (!isValidEmail(email)) {
+      setError("Please enter a valid email address");
+      setLoading(false);
+      return;
+    }
     if (password !== confirmPassword) {
       setError("Passwords do not match");
+      setLoading(false);
       return;
     }
     try {
@@ -50,101 +64,113 @@ export default function RegisterScreen() {
       setError("Registration failed. Please try again.");
     }
   } 
+  function isValidEmail(email: string) {
+    return /^[^@]+@[^@]+\.[^@]+$/.test(email);
+  }
   return (
-    <KeyboardAvoidingView style={{ flex: 1 }} 
-    behavior={Platform.OS === "ios" ? "padding" : "height"}
-    keyboardVerticalOffset={Platform.OS === "ios" ? 60 : 0}
-    >
-    <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-      <AppText style={{ fontSize: 24, fontWeight: "700", marginBottom: 24 }}>Register</AppText>
-      <AppInput 
-        placeholder="Username" 
-        style={{ width: 200, marginBottom: 12 }} 
-        value={username}
-        onChangeText={setUsername}
-      />
-      <AppInput 
-        placeholder="Email" 
-        style={{ width: 200, marginBottom: 12 }} 
-        keyboardType="email-address" 
-        value={email}
-        onChangeText={setEmail}
-      />
-      <AppInput
-        placeholder="Name"
-        style={{ width: 200, marginBottom: 12 }}
-        value={name}
-        onChangeText={setName}
-      />
-      <View style={{ width: 200, marginBottom: 12, position: "relative" }}>
-        <AppInput
-          placeholder="Password"
-          style={{ paddingRight: 40 }}
-          secureTextEntry={!showPassword}
-          value={password}
-          onChangeText={setPassword}
-        />
-        <Pressable
-          onPress={() => setShowPassword(v => !v)}
-          style={{
-            position: "absolute",
-            right: 8,
-            top: 0,
-            height: "100%",
-            justifyContent: "center",
-            padding: 6,
-            zIndex: 2,
-          }}
-        >
-          <Ionicons
-            name={showPassword ? "eye-off-outline" : "eye-outline"}
-            size={22}
-            color="#fff"
-          />
-        </Pressable>
-      </View>
-      <View style={{ width: 200, marginBottom: 12, position: "relative" }}>
-        <AppInput
-          placeholder="Confirm Password"
-          style={{ paddingRight: 40 }}
-          secureTextEntry={!showConfirm}
-          value={confirmPassword}
-          onChangeText={setConfirmPassword}
-        />
-        <Pressable
-          onPress={() => setShowConfirm(v => !v)}
-          style={{
-            position: "absolute",
-            right: 8,
-            top: 0,
-            height: "100%",
-            justifyContent: "center",
-            padding: 6,
-            zIndex: 2,
-          }}
-        >
-          <Ionicons
-            name={showConfirm ? "eye-off-outline" : "eye-outline"}
-            size={22}
-            color="#fff"
-          />
-        </Pressable>
-      </View>
-      <AppButton 
-        title="Register" 
-        onPress={() => handleRegister()} 
-        disabled={loading}
+    <SafeAreaView style={{ flex: 1, backgroundColor: Colors.light.background }}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 60 : 0}
       >
-        {loading && <ActivityIndicator color="#fff" style={{ marginRight: 8 }} />}
-      </AppButton>
-      {/* Error message */}
-      {error !== "" && (
-        <AppText style={{ color: "red", marginTop: 12 }}>{error}</AppText>
-      )}
-      <TouchableOpacity style={{ marginTop: 16 }} onPress={() => router.push("/auth/login")}>
-        <AppText style={{ color: Colors.light.primary }}>Already have an account? Login</AppText>
-      </TouchableOpacity>
-    </View>
-    </KeyboardAvoidingView>
+        <View style={{ flex: 1, justifyContent: "center", alignItems: "center", paddingBottom: 80 }}>
+          <AppText style={{ fontSize: 24, fontWeight: "700", marginBottom: 24 }}>Register</AppText>
+          <AppInput
+            placeholder="Username"
+            style={{ width: 200, marginBottom: 6 }}
+            value={username}
+            onChangeText={setUsername}
+          />
+          <AppInput
+            placeholder="Email"
+            style={{ width: 200, marginBottom: 6 }}
+            keyboardType="email-address"
+            value={email}
+            onChangeText={setEmail}
+          />
+          <AppInput
+            placeholder="Name"
+            style={{ width: 200, marginBottom: 6 }}
+            value={name}
+            onChangeText={setName}
+          />
+          <View style={{ width: 200, marginBottom: 6, position: "relative" }}>
+            <AppInput
+              placeholder="Password"
+              style={{ paddingRight: 40 }}
+              secureTextEntry={!showPassword}
+              value={password}
+              onChangeText={setPassword}
+            />
+            <Pressable
+              onPress={() => setShowPassword(v => !v)}
+              style={{
+                position: "absolute",
+                right: 8,
+                top: 0,
+                height: "100%",
+                justifyContent: "center",
+                padding: 6,
+                zIndex: 2,
+              }}
+            >
+              <Ionicons
+                name={showPassword ? "eye-off-outline" : "eye-outline"}
+                size={22}
+                color="#fff"
+              />
+            </Pressable>
+          </View>
+          <View style={{ width: 200, marginBottom: 6, position: "relative" }}>
+            <AppInput
+              placeholder="Confirm Password"
+              style={{ paddingRight: 40 }}
+              secureTextEntry={!showConfirm}
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+            />
+            <Pressable
+              onPress={() => setShowConfirm(v => !v)}
+              style={{
+                position: "absolute",
+                right: 8,
+                top: 0,
+                height: "100%",
+                justifyContent: "center",
+                padding: 6,
+                zIndex: 2,
+              }}
+            >
+              <Ionicons
+                name={showConfirm ? "eye-off-outline" : "eye-outline"}
+                size={22}
+                color="#fff"
+              />
+            </Pressable>
+          </View>
+          <View style={{ width: 200 }}>
+            <AppButton
+              title="Create Account"
+              onPress={handleRegister}
+              disabled={loading}
+            >
+              {loading && <ActivityIndicator color="#fff" style={{ marginRight: 8 }} />}
+            </AppButton>
+          </View>
+          {/* Error message */}
+          {error !== "" && (
+            <AppText style={{ color: "red", marginTop: 12 }}>{error}</AppText>
+          )}
+        </View>
+      </KeyboardAvoidingView>
+      <View style={{ position: "absolute", bottom: 40, width: "100%", alignItems: "center" }}>
+        <AppButton
+          title="Back to Login"
+          onPress={() => router.push("/auth/login")}
+          style={{ width: 200 }}
+        />
+      </View>
+    </SafeAreaView>
   );
 }
