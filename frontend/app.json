@@ -22,6 +22,7 @@
       },
       "edgeToEdgeEnabled": true,
       "softwareKeyboardLayoutMode": "resize",
+      "googleServicesFile": "./google-services.json",
       "package": "com.steve.distancelove",
       "versionCode": 1
     },

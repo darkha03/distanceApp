@@ -36,6 +36,7 @@ model User {
   partnerId  String?    @unique      // FK to another user
   activityImageUrl  String?
   statusImageSet  String?
+  notificationToken String?
 
   partner    User?   @relation("UserPartner", fields: [partnerId], references: [id])
   partnerOf  User?   @relation("UserPartner")

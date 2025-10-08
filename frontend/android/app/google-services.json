@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "313970404315",
+    "project_id": "distancelove",
+    "storage_bucket": "distancelove.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:313970404315:android:58dd230d20e3b6287fd5fe",
+        "android_client_info": {
+          "package_name": "com.steve.distancelove"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDD52e2Lpko6vv_um-YTK5W10yWWrOfSXs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -6,6 +6,7 @@ import { Colors } from "@/constants/Colors";
 import { useAuthStore } from "@/store/authStore";
 import { useRouter } from "expo-router";
 import { AuthContext } from "@/utils/authContext";
+import { removeToken } from "@/utils/storage";
 import * as Clipboard from 'expo-clipboard';
 import React from "react";
 
@@ -14,6 +15,7 @@ export default function ProfileScreen() {
   const router = useRouter();
   const authContext = React.useContext(AuthContext);
   const [copied, setCopied] = React.useState(false);
+  const BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || "http://localhost:4000";
   if (!token || !authContext?.user) {
     return null;
   }
@@ -33,6 +35,10 @@ export default function ProfileScreen() {
 
   const handleLogout = async () => {
     clearToken();
+    await removeToken();
+    await fetch(`${BASE_URL}/api/users/notification-token`, 
+      { method: "DELETE", 
+        headers: { Authorization: `Bearer ${token}` } });
     router.replace("/auth/login");
   };
 

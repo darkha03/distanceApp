@@ -10,6 +10,7 @@ import { AuthProvider } from '@/utils/AuthProvider';
 import { SocketProvider } from '@/utils/SocketContext';
 import { PartnerProvider } from '@/utils/PartnerContext';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { NotificationProvider } from '@/utils/NotificationContext';
 
 export default function TabLayout() {
     const colorScheme = useColorScheme();
@@ -18,6 +19,7 @@ export default function TabLayout() {
       <AuthProvider>
         <SocketProvider>
           <PartnerProvider>
+            <NotificationProvider>
             <SafeAreaProvider>
             <Tabs
             screenOptions={{
@@ -49,6 +51,7 @@ export default function TabLayout() {
             />
             </Tabs>
             </SafeAreaProvider>
+            </NotificationProvider>
           </PartnerProvider>
         </SocketProvider>
     </AuthProvider>
