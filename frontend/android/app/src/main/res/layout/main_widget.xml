@@ -1,0 +1,123 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    style="@style/Widget.DistanceLove.AppWidget.Container"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_background_dark"
+    android:padding="16dp"
+    android:theme="@style/AppTheme.AppWidgetContainer">
+
+    <!-- Left Column for Date, Time, and Status -->
+    <LinearLayout
+        android:id="@+id/date_time_layout"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentStart="true"
+        android:layout_centerVertical="true"
+        android:gravity="center_horizontal"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/widget_date_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/widget_default_date"
+            android:textColor="@android:color/white"
+            android:textSize="14sp" />
+
+        <TextView
+            android:id="@+id/widget_time_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/widget_default_time"
+            android:textColor="@android:color/white"
+            android:textSize="48sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/widget_status_pill"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/widget_status_button_background"
+            android:paddingHorizontal="16dp"
+            android:paddingVertical="6dp"
+            android:text="@string/widget_status"
+            android:textColor="@android:color/black"
+            android:textSize="14sp" />
+    </LinearLayout>
+
+    <!-- Right Column for Indicators -->
+    <LinearLayout
+        android:id="@+id/indicators_layout"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentEnd="true"
+        android:layout_centerVertical="true"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:paddingStart="12dp">
+
+        <!-- FIX: Replaced ImageButtons with a simple vertical LinearLayout of switches -->
+        <!-- Each switch is now an ImageView with a background drawable -->
+        <!-- If you need click functionality, you would set it up in your Kotlin code -->
+
+        <ImageView
+            android:id="@+id/btn_sleep"
+            android:layout_width="48dp"
+            android:layout_height="24dp"
+            android:layout_marginBottom="8dp"
+            android:background="@drawable/widget_switch_active_sleep"
+            android:contentDescription="Sleep mode" />
+
+        <ImageView
+            android:id="@+id/btn_music"
+            android:layout_width="48dp"
+            android:layout_height="24dp"
+            android:layout_marginBottom="8dp"
+            android:background="@drawable/widget_switch_inactive_music"
+            android:contentDescription="Music mode" />
+
+        <ImageView
+            android:id="@+id/btn_study"
+            android:layout_width="48dp"
+            android:layout_height="24dp"
+            android:layout_marginBottom="8dp"
+            android:background="@drawable/widget_switch_inactive_study"
+            android:contentDescription="Study mode" />
+
+        <ImageView
+            android:id="@+id/btn_play"
+            android:layout_width="48dp"
+            android:layout_height="24dp"
+            android:background="@drawable/widget_switch_inactive_play"
+            android:contentDescription="Play mode" />
+
+    </LinearLayout>
+    <!-- ADDED: Vertical Divider Line -->
+    <ImageView
+        android:id="@+id/vertical_divider"
+        android:layout_width="1dp"
+        android:layout_height="120dp"
+        android:layout_centerVertical="true"
+        android:layout_toStartOf="@id/indicators_layout"
+        android:background="@android:color/darker_gray" />
+    <!-- Center content block -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true"
+        android:layout_toStartOf="@id/indicators_layout"
+        android:layout_toEndOf="@id/date_time_layout"
+        android:gravity="center_horizontal"
+        android:orientation="vertical">
+
+        <ImageView
+            android:id="@+id/widget_image"
+            android:layout_width="97dp"
+            android:layout_height="97dp"
+            android:background="@drawable/widget_image_placeholder"
+            android:contentDescription="@string/widget_image_description" />
+
+    </LinearLayout>
+
+</RelativeLayout>

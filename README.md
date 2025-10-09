@@ -50,3 +50,4 @@ my-app/
 - Status image themes (default / 1 / 2) with pill selector + live preview.
 - Weather & timezone display per partner.
 - Automated cleanup (DB + Cloudinary) hourly.
+- Notification on update

@@ -78,7 +78,12 @@ activityImages:expired # (Optional) cleanup notifications
 | Prebuild (bare) | `npx expo prebuild` |
 
 ## Production Builds (EAS)
-
-`eas build --platform android `
-`eas build --platform ios`
 (Requires EAS setup & login.)
+For android
+``` bash
+eas build --platform android 
+```
+For IoS (require Developper Account)
+``` bash
+eas build --platform ios
+```
