@@ -41,7 +41,9 @@
                 android:name="android.appwidget.provider"
                 android:resource="@xml/main_widget_info" />
         </receiver>
-
+        <service
+            android:name=".StatusUpdateService"
+            android:exported="false" />
         <meta-data
             android:name="expo.modules.updates.ENABLED"
             android:value="false" />

@@ -70,20 +70,20 @@
             android:contentDescription="Sleep mode" />
 
         <ImageView
-            android:id="@+id/btn_music"
-            android:layout_width="48dp"
-            android:layout_height="24dp"
-            android:layout_marginBottom="8dp"
-            android:background="@drawable/widget_switch_inactive_music"
-            android:contentDescription="Music mode" />
-
-        <ImageView
             android:id="@+id/btn_study"
             android:layout_width="48dp"
             android:layout_height="24dp"
             android:layout_marginBottom="8dp"
             android:background="@drawable/widget_switch_inactive_study"
             android:contentDescription="Study mode" />
+
+        <ImageView
+            android:id="@+id/btn_music"
+            android:layout_width="48dp"
+            android:layout_height="24dp"
+            android:layout_marginBottom="8dp"
+            android:background="@drawable/widget_switch_inactive_music"
+            android:contentDescription="Music mode" />
 
         <ImageView
             android:id="@+id/btn_play"

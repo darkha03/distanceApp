@@ -10,6 +10,7 @@ import { AuthContext } from "@/utils/authContext";
 import * as ImagePicker from 'expo-image-picker';
 import { statusImageMap } from "@/utils/statusImage";
 import * as ImageManipulator from 'expo-image-manipulator';
+import { WidgetControl } from "@/utils/widgetBridge";
 
 export const ActivityCard = () => {
   const { token } = useAuthStore();
@@ -185,6 +186,10 @@ export const ActivityCard = () => {
       }
       const data = await res.json();
       setUser({ ...user, status: data.status });
+      // Update widget as well
+      WidgetControl.updateStatus(data.status).catch((err) => {
+        console.error("Failed to update user status on widget:", err);
+      });
     }
     catch (error) {
       console.error("Error updating activity:", error);
