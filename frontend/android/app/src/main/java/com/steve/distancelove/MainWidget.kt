@@ -19,7 +19,7 @@ class MainWidget : AppWidgetProvider() {
     override fun onUpdate(
         context: Context,
         // Use the fully qualified name for AppWidgetManager here
-        appWidgetManager: android.appwidget.AppWidgetManager,
+        appWidgetManager: AppWidgetManager,
         appWidgetIds: IntArray
     ) {
         // Update all widgets
@@ -66,7 +66,7 @@ class MainWidget : AppWidgetProvider() {
 
         fun updateAppWidget(
             context: Context,
-            appWidgetManager: android.appwidget.AppWidgetManager,
+            appWidgetManager: AppWidgetManager,
             appWidgetId: Int
         ) {
             // The reference to R.layout.main_widget will now resolve correctly.

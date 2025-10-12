@@ -43,4 +43,23 @@ export const WidgetControl = {
       console.error("WidgetControl.updatePartnerTimezone failed:", err);
     }
   },
+  setAuthToken: async (token: string) => {
+    try {
+      await WidgetControlModule.setAuthToken(token);
+    } catch (err) {
+      console.error("WidgetControl.setAuthToken failed:", err);
+    }
+    },  
+    
+};
+export const syncWidgetWithUser = (user:any) => {
+  if (!user) return;
+  WidgetControl.updateStatus(user.status || "Offline");
+  if (user.partner) {
+    WidgetControl.updatePartnerStatus(user.partner.status || "Unknown");
+    WidgetControl.updatePartnerTimezone(user.partner.timezone || "UTC");
+  } else {
+    WidgetControl.updatePartnerStatus(user.status || "Unknown");
+    WidgetControl.updatePartnerTimezone(user.timezone || "UTC");
+  }
 };

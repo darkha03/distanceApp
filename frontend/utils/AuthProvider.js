@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { AuthContext } from "./authContext";
 import { useAuthStore } from "@/store/authStore";
+import { WidgetControl, syncWidgetWithUser } from "./widgetBridge";
 
 export const AuthProvider = ({ children }) => {
   const { token, clearToken } = useAuthStore();
@@ -22,7 +23,11 @@ export const AuthProvider = ({ children }) => {
             headers: { Authorization: `Bearer ${token}` }
         });
         const data = await res.json();
-        if (active && res.ok) setUser(data);
+        if (active && res.ok) {
+          setUser(data);
+          await WidgetControl.setAuthToken(token); // Sync token with widget
+          syncWidgetWithUser(data);         // Sync user data with widget
+        }
         console.log("Fetched user profile:", user);
       } finally {
         if (active) setLoading(false);

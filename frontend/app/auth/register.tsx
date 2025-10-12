@@ -9,6 +9,7 @@ import * as React from "react";
 import { Pressable, View, ActivityIndicator, KeyboardAvoidingView, Platform } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { WidgetControl } from "@/utils/widgetBridge";
 
 export default function RegisterScreen() {
   const [username, setUsername] = React.useState("");
@@ -58,6 +59,7 @@ export default function RegisterScreen() {
       const data = await res.json();
       setToken(data.token);
       await saveToken(data.token);
+      await WidgetControl.setAuthToken(data.token);
       router.replace("/dashboard");
     } catch (err) {
       console.error("Registration error:", err);

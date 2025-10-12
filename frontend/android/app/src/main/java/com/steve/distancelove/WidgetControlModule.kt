@@ -4,6 +4,9 @@ import android.appwidget.AppWidgetManager
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.util.Log
+import androidx.security.crypto.EncryptedSharedPreferences
+import androidx.security.crypto.MasterKeys
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReactContextBaseJavaModule
 import com.facebook.react.bridge.ReactMethod
@@ -53,6 +56,34 @@ class WidgetControlModule(reactContext: ReactApplicationContext) : ReactContextB
             apply()
         }
         updateWidgets()
+    }
+
+    @ReactMethod
+    fun setAuthToken(token: String?) {
+        val context = reactApplicationContext
+
+        // 1. Create a master key for encryption
+        val masterKeyAlias = MasterKeys.getOrCreate(MasterKeys.AES256_GCM_SPEC)
+
+        // 2. Get an instance of EncryptedSharedPreferences
+        val sharedPreferences = EncryptedSharedPreferences.create(
+            "secure_prefs", // A unique name for the secure file
+            masterKeyAlias,
+            context,
+            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+        )
+        with(sharedPreferences.edit()) {
+            if (token != null) {
+                putString(KEY_AUTH_TOKEN, token)
+                Log.i("WidgetControlModule", "Auth token has been set.")
+            } else {
+                // FIX: Use the 'remove' method from the SharedPreferences.Editor
+                remove("auth_token")
+                Log.i("WidgetControlModule", "Auth token has been cleared.")
+            }
+            apply()
+        }
     }
 
     /**

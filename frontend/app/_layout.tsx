@@ -4,7 +4,7 @@ import { useAuthStore } from "@/store/authStore";
 import { getToken,removeToken } from "@/utils/storage";
 import { Stack } from "expo-router";
 import { useEffect, useState } from "react";
-
+import { WidgetControl } from "@/utils/widgetBridge";
 
 export default function RootLayout() {
   const [isLoading, setIsLoading] = useState(true); // Replace with actual loading logic if needed
@@ -27,10 +27,13 @@ export default function RootLayout() {
             setToken(storedToken);
           } else {
             await removeToken(); // clear AsyncStorage
+            await WidgetControl.setAuthToken(''); // clear widget token
             clearToken(); // clear Zustand store
           }
         } catch (err) {
           console.error("Token verification failed:", err);
+          await removeToken(); // clear AsyncStorage
+          await WidgetControl.setAuthToken(''); // clear widget token
           clearToken();
         }
       }

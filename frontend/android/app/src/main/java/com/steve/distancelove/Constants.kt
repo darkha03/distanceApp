@@ -8,6 +8,8 @@ const val KEY_CURRENT_STATUS = "current_status"
 const val KEY_PARTNER_STATUS = "partner_status"
 const val KEY_PARTNER_TIMEZONE = "partner_timezone"
 
+const val KEY_AUTH_TOKEN = "auth_token"
+
 
 // --- Widget Actions ---
 const val ACTION_SLEEP_CLICK = "com.steve.distancelove.ACTION_SLEEP_CLICK"
@@ -17,7 +19,7 @@ const val ACTION_PLAY_CLICK = "com.steve.distancelove.ACTION_PLAY_CLICK"
 
 // --- Status Values ---
 const val STATUS_SLEEP = "sleep"
-const val STATUS_MUSIC = "music"
+const val STATUS_MUSIC = "relax"
 const val STATUS_STUDY = "study"
 const val STATUS_PLAY = "play"
 

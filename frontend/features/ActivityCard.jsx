@@ -190,6 +190,11 @@ export const ActivityCard = () => {
       WidgetControl.updateStatus(data.status).catch((err) => {
         console.error("Failed to update user status on widget:", err);
       });
+      if(!user.partner){
+        WidgetControl.updatePartnerStatus(data.status).catch((err) => {
+          console.error("Failed to update partner status on widget:", err);
+        });
+      }
     }
     catch (error) {
       console.error("Error updating activity:", error);

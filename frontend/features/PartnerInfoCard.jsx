@@ -7,6 +7,7 @@ import { AuthContext } from "@/utils/authContext";
 import { Colors } from "@/constants/Colors";
 import { weatherCodeIconMap } from "@/utils/weatherCodes";
 import { statusImageMap } from "@/utils/statusImage";
+import { WidgetControl } from "@/utils/widgetBridge";
 
 const IMAGE_SIZE = 120;
 
@@ -26,10 +27,16 @@ export function PartnerInfoCard() {
   const [fullScreenVisible, setFullScreenVisible] = useState(false);
   const [fullScreenIndex, setFullScreenIndex] = useState(0);
   const [showActivityImages, setShowActivityImages] = useState(true);
-  // Use partner.activityImages (array of {id, url, createdAt})
   const activityImages = partner.activityImages || [];
   const [currentIndex, setCurrentIndex] = useState(0);
   const imageSet = partner.statusImageSet || "default";
+
+  useEffect(() => {
+    if (!partner) return;
+    //Keep widget in sync
+    WidgetControl.updatePartnerStatus(partner.status || "Unknown");
+    WidgetControl.updatePartnerTimezone(partner.timezone || "UTC");
+  }, [partner]);
 
   useEffect(() => {
     const update = () => {
