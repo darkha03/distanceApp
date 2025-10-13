@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { AuthContext } from "./authContext";
-import { useAuthStore } from "@/store/authStore";
+import { useAuthStore } from "@/utils/authStore";
 import { WidgetControl, syncWidgetWithUser } from "./widgetBridge";
 
 export const AuthProvider = ({ children }) => {
-  const { token, clearToken } = useAuthStore();
+  const { token, logout } = useAuthStore();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://localhost:4000';
@@ -40,7 +40,7 @@ export const AuthProvider = ({ children }) => {
     user,
     setUser,
     token,
-    clearToken,
+    logout,
     loading
   };
 

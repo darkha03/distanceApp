@@ -7,7 +7,7 @@ import { AppText } from "@/components/AppText";
 import { AppInput } from "@/components/AppInput";
 import { usePartner } from "@/utils/PartnerContext";
 import { useAuthContext } from "@/utils/authContext";
-import { useAuthStore } from "@/store/authStore";
+import { useAuthStore } from "@/utils/authStore";
 
 export const AddPartnerCard = () => {
   const [visible, setVisible] = useState(false);

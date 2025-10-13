@@ -7,6 +7,7 @@ import android.content.Intent
 import android.util.Log
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKeys
+import com.facebook.react.bridge.Promise
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReactContextBaseJavaModule
 import com.facebook.react.bridge.ReactMethod
@@ -30,9 +31,6 @@ class WidgetControlModule(reactContext: ReactApplicationContext) : ReactContextB
         updateWidgets()
     }
 
-    /**
-     * NEW: A method callable from JS to update the partner's status.
-     */
     @ReactMethod
     fun updatePartnerStatus(partnerStatus: String) {
         val context = reactApplicationContext
@@ -44,9 +42,6 @@ class WidgetControlModule(reactContext: ReactApplicationContext) : ReactContextB
         updateWidgets()
     }
 
-    /**
-     * NEW: A method callable from JS to update the partner's timezone.
-     */
     @ReactMethod
     fun updatePartnerTimezone(partnerTimezone: String) {
         val context = reactApplicationContext
@@ -86,8 +81,19 @@ class WidgetControlModule(reactContext: ReactApplicationContext) : ReactContextB
         }
     }
 
+    @ReactMethod
+    fun getCurrentStatus(promise: Promise) {
+        try {
+            val context = reactApplicationContext
+            val sharedPrefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            val currentStatus = sharedPrefs.getString(KEY_CURRENT_STATUS, STATUS_SLEEP) // Default to sleep
+            promise.resolve(currentStatus)
+        } catch (e: Exception) {
+            promise.reject("E_WIDGET_CONTROL", "Failed to get current status", e)
+        }
+    }
     /**
-     * NEW: A helper function to reduce code duplication. It sends the broadcast
+     * A helper function to reduce code duplication. It sends the broadcast
      * to the AppWidgetManager to refresh all widgets.
      */
     private fun updateWidgets() {

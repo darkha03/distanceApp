@@ -49,8 +49,16 @@ export const WidgetControl = {
     } catch (err) {
       console.error("WidgetControl.setAuthToken failed:", err);
     }
-    },  
-    
+    },
+  getCurrentStatus: async (): Promise<string | null> => {
+    try {
+      const status = await WidgetControlModule.getCurrentStatus();
+      return status;
+    } catch (err) {
+      console.error("WidgetControl.getCurrentStatus failed:", err);
+      return null;
+    }
+  },      
 };
 export const syncWidgetWithUser = (user:any) => {
   if (!user) return;

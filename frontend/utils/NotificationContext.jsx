@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 import * as Notifications from "expo-notifications";
 import * as Device from "expo-device";
 import { Platform } from "react-native";
-import { useAuthStore } from "@/store/authStore";
+import { useAuthStore } from "@/utils/authStore";
 import Constants from "expo-constants";
 
 // Get EAS projectId if needed for push tokens in EAS build

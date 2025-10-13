@@ -1,11 +1,11 @@
-import React, { useState, useContext } from "react";
+import React, { useState, useContext, useEffect } from "react";
 import { View, TouchableOpacity, StyleSheet, Image, FlatList } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "@/constants/Colors";
 import { AppCard } from "@/components/AppCard";
 import { AppText } from "@/components/AppText";
 import { AppInput } from "@/components/AppInput";
-import { useAuthStore } from "@/store/authStore";
+import { useAuthStore } from "@/utils/authStore";
 import { AuthContext } from "@/utils/authContext";
 import * as ImagePicker from 'expo-image-picker';
 import { statusImageMap } from "@/utils/statusImage";
@@ -40,6 +40,9 @@ export const ActivityCard = () => {
       // For now, we just update the local state
     }
   };*/}
+  useEffect(() => {
+    setSelectedActivity(user.status || "sleep");
+  }, [user.status]);
 
   const resizeImage = async (uri) => {
     try {

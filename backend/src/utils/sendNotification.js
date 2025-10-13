@@ -1,12 +1,12 @@
 import { Expo } from "expo-server-sdk";
 const expo = new Expo();
 
-export async function sendPushNotification(token, body, data = {}) {
+export async function sendPushNotification(token, title, body, data = {}) {
   if (!token || !Expo.isExpoPushToken(token)) return;
   const messages = [{
     to: token,
     sound: "default",
-    title: "Update from your partner 💕",
+    title,
     body,
     data
   }];

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { useAuthStore } from "@/store/authStore";
+import { useAuthStore } from "@/utils/authStore";
 import { AuthContext } from "./authContext";
 import { SocketContext } from "./SocketContext";
 import type {ActivityImage} from "./authContext";

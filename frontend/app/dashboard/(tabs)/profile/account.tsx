@@ -1,13 +1,12 @@
 import React, { useState, useContext } from "react";
 import { View, StyleSheet, Modal, TextInput, Pressable, ScrollView, Platform, KeyboardAvoidingView, Image } from "react-native";
 import { AuthContext } from "@/utils/authContext";
-import { useAuthStore } from "@/store/authStore";
+import { useAuthStore } from "@/utils/authStore";
 import { Colors } from "@/constants/Colors";
 import { AppText } from "@/components/AppText";
 import { SectionHeader } from "@/components/app/SectionHeader";
 import { FieldRow } from "@/components/app/FieldRow";
 import { router } from "expo-router";
-import { removeToken } from "@/utils/storage";
 import { Ionicons } from "@expo/vector-icons";
 import { statusImageMap } from "@/utils/statusImage";
 
@@ -21,7 +20,7 @@ const PREVIEW_STATUSES = ["sleep", "study", "relax", "play"] as const;
 type StatusKey = typeof PREVIEW_STATUSES[number];
 
 export default function AccountScreen() {
-  const { token, clearToken } = useAuthStore();
+  const { token, logout } = useAuthStore();
   const authCtx = useContext(AuthContext);
   const BASE_URL = (process.env.EXPO_PUBLIC_API_BASE_URL || "http://localhost:4000").replace(/\/$/,"");
   if (!authCtx?.user) return null;
@@ -87,8 +86,7 @@ export default function AccountScreen() {
       });
       if (res.ok) {
         setDeleteVisible(false);
-        clearToken();
-        removeToken();
+        logout();
         router.replace("/auth/login");
       } else {
         setMessage("Delete failed");

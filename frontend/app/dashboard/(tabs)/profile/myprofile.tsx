@@ -2,7 +2,7 @@ import React, { useState, useContext } from "react";
 import { View, StyleSheet, Image, Modal, Pressable, TextInput, ScrollView, Platform, KeyboardAvoidingView } from "react-native";
 import * as Location from "expo-location";
 import { AuthContext } from "@/utils/authContext";
-import { useAuthStore } from "@/store/authStore";
+import { useAuthStore } from "@/utils/authStore";
 import { AppText } from "@/components/AppText";
 import { Colors } from "@/constants/Colors";
 import {SectionHeader} from "@/components/app/SectionHeader";

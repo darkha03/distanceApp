@@ -3,15 +3,14 @@ import { AppText } from "@/components/AppText";
 import { AppButton } from "@/components/AppButton";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "@/constants/Colors";
-import { useAuthStore } from "@/store/authStore";
 import { useRouter } from "expo-router";
 import { AuthContext } from "@/utils/authContext";
-import { removeToken } from "@/utils/storage";
+import { useAuthStore } from "@/utils/authStore";
 import * as Clipboard from 'expo-clipboard';
 import React from "react";
 
 export default function ProfileScreen() {
-  const { clearToken, token } = useAuthStore();
+  const { logout, token } = useAuthStore();
   const router = useRouter();
   const authContext = React.useContext(AuthContext);
   const [copied, setCopied] = React.useState(false);
@@ -34,11 +33,10 @@ export default function ProfileScreen() {
 };
 
   const handleLogout = async () => {
-    clearToken();
-    await removeToken();
     await fetch(`${BASE_URL}/api/users/notification-token`, 
       { method: "DELETE", 
         headers: { Authorization: `Bearer ${token}` } });
+    logout();
     router.replace("/auth/login");
   };
 

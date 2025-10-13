@@ -15,7 +15,8 @@ export async function notifyPartner(partnerId, event, payload, pushMessageBuilde
     });
     if (partner?.notificationToken) {
       const { body, data } = pushMessageBuilder(payload);
-      await sendPushNotification(partner.notificationToken, body, data);
+      const title = "Update from your partner 💕"
+      await sendPushNotification(partner.notificationToken, title, body, data);
       console.log("Sent push notification to user", partnerId);
     }
   }

@@ -83,7 +83,7 @@ class MainWidget : AppWidgetProvider() {
             val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault()).apply {
                 timeZone = partnerTimeZone
             }
-            val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).apply {
+            val dateFormat = SimpleDateFormat("EEEE, dd MMM, yyyy", Locale.getDefault()).apply {
                 timeZone = partnerTimeZone
             }
 
@@ -93,12 +93,21 @@ class MainWidget : AppWidgetProvider() {
             val currentDate = dateFormat.format(Date())
             views.setTextViewText(R.id.widget_date_text, currentDate)
 
-
-            // Example: set an image (from drawable)
-            views.setImageViewResource(R.id.widget_image, R.drawable.widget_image_placeholder)
-            // Set partnerStatus
             val partnerStatus = sharedPrefs.getString(KEY_PARTNER_STATUS, STATUS_SLEEP)
-            views.setTextViewText(R.id.widget_status_pill, partnerStatus)
+            // --- SET IMAGE BASED ON PARTNER STATUS ---
+            val partnerImageResource = when (partnerStatus) {
+                STATUS_SLEEP -> R.drawable.status_image_sleep
+                STATUS_MUSIC -> R.drawable.status_image_relax
+                STATUS_STUDY -> R.drawable.status_image_study
+                STATUS_PLAY -> R.drawable.status_image_play
+                else -> R.drawable.status_image_sleep // Use a default fallback image
+            }
+            views.setImageViewResource(R.id.widget_image, partnerImageResource)
+            // Set partnerStatus
+            val capitalizedPartnerStatus = partnerStatus?.replaceFirstChar{
+                if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString()
+            }
+            views.setTextViewText(R.id.widget_status_pill, capitalizedPartnerStatus)
 
             // Set the active switch based on SharedPreferences
             views.setImageViewResource(R.id.btn_sleep, if (currentStatus == STATUS_SLEEP) R.drawable.widget_switch_active_sleep else R.drawable.widget_switch_inactive_sleep)
