@@ -54,6 +54,28 @@ class WidgetControlModule(reactContext: ReactApplicationContext) : ReactContextB
     }
 
     @ReactMethod
+    fun updatePartnerImageSet(partnerImageSet: String) {
+        val context = reactApplicationContext
+        val sharedPrefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        with(sharedPrefs.edit()) {
+            putString(KEY_PARTNER_IMAGE_SET, partnerImageSet)
+            apply()
+        }
+        updateWidgets()
+    }
+
+    @ReactMethod
+    fun updatePartnerImageUrl(partnerImageUrl: String) {
+        val context = reactApplicationContext
+        val sharedPrefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        with(sharedPrefs.edit()) {
+            putString(KEY_PARTNER_IMAGE_URL, partnerImageUrl)
+            apply()
+        }
+        updateWidgets()
+    }
+
+    @ReactMethod
     fun setAuthToken(token: String?) {
         val context = reactApplicationContext
 
@@ -74,7 +96,7 @@ class WidgetControlModule(reactContext: ReactApplicationContext) : ReactContextB
                 Log.i("WidgetControlModule", "Auth token has been set.")
             } else {
                 // FIX: Use the 'remove' method from the SharedPreferences.Editor
-                remove("auth_token")
+                remove(KEY_AUTH_TOKEN)
                 Log.i("WidgetControlModule", "Auth token has been cleared.")
             }
             apply()
@@ -90,6 +112,18 @@ class WidgetControlModule(reactContext: ReactApplicationContext) : ReactContextB
             promise.resolve(currentStatus)
         } catch (e: Exception) {
             promise.reject("E_WIDGET_CONTROL", "Failed to get current status", e)
+        }
+    }
+
+    @ReactMethod
+    fun getPartnerImageUrl(promise: Promise) {
+        try {
+            val context = reactApplicationContext
+            val sharedPrefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            val partnerImageUrl = sharedPrefs.getString(KEY_PARTNER_IMAGE_URL, null)
+            promise.resolve(partnerImageUrl)
+        } catch (e: Exception) {
+            promise.reject("E_WIDGET_CONTROL", "Failed to get partner image URL", e)
         }
     }
     /**

@@ -11,10 +11,10 @@ import { SocketProvider } from '@/utils/SocketContext';
 import { PartnerProvider } from '@/utils/PartnerContext';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NotificationProvider } from '@/utils/NotificationContext';
-import { useEffect } from "react";
 import { AppState } from "react-native";
 import { WidgetControl } from "@/utils/widgetBridge";
 import { AuthContext } from '@/utils/authContext';
+import { syncPartnerWidgetImage } from '@/utils/updateWidgetImage';
 
 function StatusSyncer() {
   const authContext = React.useContext(AuthContext);
@@ -27,6 +27,7 @@ function StatusSyncer() {
           setUser({ ...user, status });
         }
       }
+      
     };
     syncStatus();
     const subscription = AppState.addEventListener("change", nextAppState => {

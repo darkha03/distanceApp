@@ -36,6 +36,7 @@ export function PartnerInfoCard() {
     //Keep widget in sync
     WidgetControl.updatePartnerStatus(partner.status || "Unknown");
     WidgetControl.updatePartnerTimezone(partner.timezone || "UTC");
+    WidgetControl.updatePartnerImageSet(partner.statusImageSet || "default");
   }, [partner]);
 
   useEffect(() => {

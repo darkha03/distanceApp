@@ -113,9 +113,8 @@
 
         <ImageView
             android:id="@+id/widget_image"
-            android:layout_width="97dp"
-            android:layout_height="97dp"
-            android:background="@drawable/widget_image_placeholder"
+            android:layout_width="108dp"
+            android:layout_height="108dp"
             android:contentDescription="@string/widget_image_description" />
 
     </LinearLayout>

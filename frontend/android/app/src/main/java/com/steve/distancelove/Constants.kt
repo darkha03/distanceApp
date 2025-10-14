@@ -7,7 +7,8 @@ const val PREFS_NAME = "WidgetPrefs"
 const val KEY_CURRENT_STATUS = "current_status"
 const val KEY_PARTNER_STATUS = "partner_status"
 const val KEY_PARTNER_TIMEZONE = "partner_timezone"
-
+const val KEY_PARTNER_IMAGE_SET = "partner_image_set"
+const val KEY_PARTNER_IMAGE_URL = "partner_image_url"
 const val KEY_AUTH_TOKEN = "auth_token"
 
 

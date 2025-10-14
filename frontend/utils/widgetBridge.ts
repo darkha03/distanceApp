@@ -43,6 +43,26 @@ export const WidgetControl = {
       console.error("WidgetControl.updatePartnerTimezone failed:", err);
     }
   },
+
+  // Update the partner's image set
+    updatePartnerImageSet: async (imageSet: string) => {
+    try {
+      await WidgetControlModule.updatePartnerImageSet(imageSet);
+    } catch (err) {
+      console.error("WidgetControl.updatePartnerImageSet failed:", err);
+    }
+  },
+
+  // Update the partner's image url
+  updatePartnerImageUrl: async (imageUrl: string) => {
+    try {
+      await WidgetControlModule.updatePartnerImageUrl(imageUrl);
+    } catch (err) {
+      console.error("WidgetControl.updatePartnerImageUrl failed:", err);
+    }
+  },
+
+  // Set authentication token for secure communication
   setAuthToken: async (token: string) => {
     try {
       await WidgetControlModule.setAuthToken(token);
@@ -58,7 +78,16 @@ export const WidgetControl = {
       console.error("WidgetControl.getCurrentStatus failed:", err);
       return null;
     }
-  },      
+  },
+  getPartnerImageUrl: async (): Promise<string | null> => {
+    try {
+      const imageUrl = await WidgetControlModule.getPartnerImageUrl();
+      return imageUrl;
+    } catch (err) {
+      console.error("WidgetControl.getPartnerImageUrl failed:", err);
+      return null;
+    }
+  }      
 };
 export const syncWidgetWithUser = (user:any) => {
   if (!user) return;
@@ -66,8 +95,10 @@ export const syncWidgetWithUser = (user:any) => {
   if (user.partner) {
     WidgetControl.updatePartnerStatus(user.partner.status || "Unknown");
     WidgetControl.updatePartnerTimezone(user.partner.timezone || "UTC");
+    WidgetControl.updatePartnerImageSet(user.partner.statusImageSet || "default");
   } else {
     WidgetControl.updatePartnerStatus(user.status || "Unknown");
     WidgetControl.updatePartnerTimezone(user.timezone || "UTC");
+    WidgetControl.updatePartnerImageSet(user.statusImageSet || "default");
   }
 };
