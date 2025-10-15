@@ -161,6 +161,7 @@ export function PartnerInfoCard() {
           data={activityImages}
           keyExtractor={item => item.id}
           showsHorizontalScrollIndicator={false}
+          
           onMomentumScrollEnd={e => {
             const index = Math.round(e.nativeEvent.contentOffset.x / IMAGE_SIZE);
             setCurrentIndex(Math.min(index, activityImages.length - 1));
@@ -182,7 +183,7 @@ export function PartnerInfoCard() {
               />
             </TouchableOpacity>
           )}
-          style={{ maxWidth: IMAGE_SIZE * 1.2 }}
+          style={{ maxWidth: IMAGE_SIZE * 1.05, maxHeight: IMAGE_SIZE }}
         />
         <View style={styles.dotsRow}>
           {activityImages.map((_, i) => (

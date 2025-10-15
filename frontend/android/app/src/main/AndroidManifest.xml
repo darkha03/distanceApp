@@ -33,6 +33,9 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
         <receiver
+            android:name=".StatusActionReceiver"
+            android:exported="false" />
+        <receiver
             android:name=".MainWidget"
             android:exported="false">
             <intent-filter>

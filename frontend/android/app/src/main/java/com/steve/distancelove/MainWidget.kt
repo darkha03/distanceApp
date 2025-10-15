@@ -51,11 +51,18 @@ class MainWidget : AppWidgetProvider() {
         }
 
         if (status != null) {
+
             val serviceIntent = Intent(context, StatusUpdateService::class.java).apply {
                 action = ACTION_UPDATE_STATUS
                 putExtra(EXTRA_STATUS, status)
             }
             context.startService(serviceIntent)
+            /**
+            val brIntent = Intent(context, StatusActionReceiver::class.java).apply {
+                putExtra(EXTRA_STATUS, status)
+            }
+            context.sendBroadcast(brIntent)
+            **/
         }
 
     }

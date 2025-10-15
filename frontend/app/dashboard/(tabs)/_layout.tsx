@@ -15,28 +15,53 @@ import { AppState } from "react-native";
 import { WidgetControl } from "@/utils/widgetBridge";
 import { AuthContext } from '@/utils/authContext';
 import { syncPartnerWidgetImage } from '@/utils/updateWidgetImage';
+import { useAuthStore } from '@/utils/authStore';
 
 function StatusSyncer() {
   const authContext = React.useContext(AuthContext);
   const { user, setUser } = authContext ?? {};
+  const partnerId = user?.partnerId ?? null;
+  const token = useAuthStore(s => s.token);
+  // Sync widget status into user once (and on resume), but only if changed
   React.useEffect(() => {
-    const syncStatus = async () => {
+    const syncLocalStatus = async () => {
       const status = await WidgetControl.getCurrentStatus();
-      if (status && user && user.id) {
-        if (setUser) {
-          setUser({ ...user, status });
-        }
+      if (status && user && user.id && setUser && status !== user.status) {
+        setUser({ ...user, status });
       }
-      
     };
-    syncStatus();
-    const subscription = AppState.addEventListener("change", nextAppState => {
-      if (nextAppState === "active") {
-        syncStatus();
-      }
+    syncLocalStatus();
+    const sub = AppState.addEventListener("change", s => {
+      if (s === "active") syncLocalStatus();
     });
-    return () => subscription.remove();
-  }, [user, setUser]);
+    return () => sub.remove();
+  }, [user?.id, user?.status, setUser]);
+
+  // Fetch partner info (mount + resume), only when we have partnerId + token
+  React.useEffect(() => {
+    if (!partnerId || !token) return;
+
+    const syncPartnerImage = async () => {
+      try {
+        const res = await fetch(`${process.env.EXPO_PUBLIC_API_BASE_URL || 'http://localhost:4000'}/api/partners/me`, {
+          method: "GET",
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        const latest = data?.partner?.activityImages?.at(-1);
+        if (latest?.url) {
+          await syncPartnerWidgetImage(latest.url, { returnContentUri: true }).catch(() => {});
+        }
+      } catch {}
+    };
+
+    syncPartnerImage();
+    const sub = AppState.addEventListener("change", s => {
+      if (s === "active") syncPartnerImage();
+    });
+    return () => sub.remove();
+  }, [partnerId, token]);
   return null;
 }
 

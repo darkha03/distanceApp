@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { AuthContext } from "./authContext";
 import { useAuthStore } from "@/utils/authStore";
 import { WidgetControl, syncWidgetWithUser } from "./widgetBridge";
-import { updateWidgetImage } from "./updateWidgetImage";
+import { syncPartnerWidgetImage } from "./updateWidgetImage";
 
 export const AuthProvider = ({ children }) => {
   const { token, logout } = useAuthStore();
@@ -31,7 +31,8 @@ export const AuthProvider = ({ children }) => {
           if (data?.partner?.activityImages?.length) {
             // Preload latest partner image into widget cache
             const latestImage = data.partner.activityImages[data.partner.activityImages.length - 1];
-            updateWidgetImage(latestImage.url, { returnContentUri: true }).catch((err) => {
+            console.log("Syncing partner widget image:", latestImage.url);
+            await syncPartnerWidgetImage(latestImage.url, { returnContentUri: true }).catch((err) => {
               console.error("Failed to update widget image:", err);
             });
           }

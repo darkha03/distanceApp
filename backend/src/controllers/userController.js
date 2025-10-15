@@ -556,6 +556,15 @@ export async function uploadActivityImages(req, res) {
         })
       )
     );
+    
+    // Set the user's activityImageUrl to the first URL in this batch
+    const firstUrl = created[0]?.url;
+    if (firstUrl) {
+      await prisma.user.update({
+        where: { id: userId },
+        data: { activityImageUrl: firstUrl }
+      });
+    }
 
     const partnerInfo = await prisma.user.findUnique({
       where: { id: userId },

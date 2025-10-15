@@ -3,6 +3,37 @@ import { getIO } from "../utils/socket.js";
 
 const prisma = new PrismaClient();
 
+// Get current user's partner info
+export async function getPartner(req, res) {
+    try {
+        const userId = req.user.userId;
+        const user = await prisma.user.findUnique({
+            where: { id: userId },
+            select: {
+                partner: {
+                    select: {
+                        id: true,
+                        name: true,
+                        email: true,
+                        status: true,
+                        activityImageUrl: true,
+                        createdAt: true,
+                    }
+                }
+            }
+        });
+        if (!user) {
+            return res.status(404).json({ error: "User not found" });
+        }
+        res.json(user);
+        console.log("Fetched partner info for user:", user);
+    } catch (error) {
+        console.error("Error fetching partner:", error);
+        res.status(500).json({ error: "Internal server error" });
+    }
+}
+
+
 //Delete partner by ID
 export async function deletePartner(req, res) {
     try {
