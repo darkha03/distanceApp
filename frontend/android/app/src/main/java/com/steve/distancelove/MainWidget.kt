@@ -1,5 +1,6 @@
 package com.steve.distancelove
 
+import com.steve.distancelove.R
 import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
@@ -7,6 +8,7 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.net.Uri
 import android.util.Log
 import android.widget.RemoteViews
 import kotlinx.coroutines.CoroutineScope
@@ -84,12 +86,12 @@ class MainWidget : AppWidgetProvider() {
         views.setTextViewText(R.id.widget_date_text, dateFormat.format(Date()))
 
         // --- IMAGE LOADING LOGIC ---
-        val partnerImagePath = sharedPrefs.getString(KEY_PARTNER_IMAGE_URL, null)
+        val partnerImagePath = sharedPrefs.getString(KEY_PARTNER_IMAGE_LOCAL_PATH, null)
         var imageBitmap: Bitmap? = null
 
         if (!partnerImagePath.isNullOrEmpty()) {
             // If a local path exists, try to load it
-            imageBitmap = loadImageFromFile(partnerImagePath)
+            imageBitmap = loadImageFromPath(context, partnerImagePath)
         }
 
         if (imageBitmap != null) {
@@ -132,18 +134,28 @@ class MainWidget : AppWidgetProvider() {
     }
 
     // --- NEW: Helper function to load an image from a local file path ---
-    private suspend fun loadImageFromFile(path: String): Bitmap? {
+    private suspend fun loadImageFromPath(context: Context, path: String): Bitmap? {
         return withContext(Dispatchers.IO) {
             try {
-                val file = File(path)
-                if (file.exists()) {
-                    BitmapFactory.decodeFile(file.absolutePath)
+                // FIX: Check if the path is a content URI
+                if (path.startsWith("content://")) {
+                    // Use ContentResolver for content URIs
+                    val imageUri = Uri.parse(path)
+                    context.contentResolver.openInputStream(imageUri)?.use { inputStream ->
+                        BitmapFactory.decodeStream(inputStream)
+                    }
                 } else {
-                    Log.e("MainWidget", "Image file does not exist at path: $path")
-                    null
+                    // Use standard File for direct file paths
+                    val file = File(path)
+                    if (file.exists()) {
+                        BitmapFactory.decodeFile(file.absolutePath)
+                    } else {
+                        Log.e("MainWidget", "Image file does not exist at path: $path")
+                        null
+                    }
                 }
             } catch (e: Exception) {
-                Log.e("MainWidget", "Exception loading image from file", e)
+                Log.e("MainWidget", "Exception loading image from path: $path", e)
                 null
             }
         }

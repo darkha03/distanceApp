@@ -17,6 +17,7 @@ export async function getPartner(req, res) {
                         email: true,
                         status: true,
                         activityImageUrl: true,
+                        avatarUrl: true,
                         createdAt: true,
                     }
                 }

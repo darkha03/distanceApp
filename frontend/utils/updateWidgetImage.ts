@@ -18,8 +18,10 @@ export async function syncPartnerWidgetImage(
   if (!newUrl) {
     if (savedUrl) {
       const oldPath = buildFileUri(savedUrl);
+      console.log("Deleting old partner widget image at:", oldPath);
       await FileSystem.deleteAsync(oldPath, { idempotent: true }).catch(() => {});
       await WidgetControl.updatePartnerImageUrl("");
+      await WidgetControl.updatePartnerImageLocalPath("");
       console.log("Cleared partner widget image");
     }
     return { localUri: null, updated: !!savedUrl };
@@ -31,6 +33,7 @@ export async function syncPartnerWidgetImage(
       returnContentUri: opts?.returnContentUri,
       headers: opts?.headers,
     });
+    await WidgetControl.updatePartnerImageLocalPath(localUri || "");
     console.log("Partner widget image unchanged");
     return { localUri, updated: false };
   }
@@ -46,7 +49,7 @@ export async function syncPartnerWidgetImage(
     returnContentUri: opts?.returnContentUri,
     headers: opts?.headers,
   });
-  
+  await WidgetControl.updatePartnerImageLocalPath(localUri || "");
   await WidgetControl.updatePartnerImageUrl(newUrl);
   console.log("Updated partner widget image:", newUrl);
   return { localUri, updated: true };

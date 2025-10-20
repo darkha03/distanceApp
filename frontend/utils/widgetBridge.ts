@@ -62,6 +62,15 @@ export const WidgetControl = {
     }
   },
 
+  // Update the local image path for the partner's image
+  updatePartnerImageLocalPath: async (imagePath: string) => {
+    try {
+      await WidgetControlModule.updatePartnerImageLocalPath(imagePath);
+    } catch (err) {
+      console.error("WidgetControl.updatePartnerImagePath failed:", err);
+    }
+  },
+
   // Set authentication token for secure communication
   setAuthToken: async (token: string) => {
     try {

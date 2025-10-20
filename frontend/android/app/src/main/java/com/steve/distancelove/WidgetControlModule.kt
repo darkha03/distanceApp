@@ -76,6 +76,17 @@ class WidgetControlModule(reactContext: ReactApplicationContext) : ReactContextB
     }
 
     @ReactMethod
+    fun updatePartnerImageLocalPath(partnerImageLocalPath: String) {
+        val context = reactApplicationContext
+        val sharedPrefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        with(sharedPrefs.edit()) {
+            putString(KEY_PARTNER_IMAGE_LOCAL_PATH, partnerImageLocalPath)
+            apply()
+        }
+        updateWidgets()
+    }
+
+    @ReactMethod
     fun setAuthToken(token: String?) {
         val context = reactApplicationContext
 

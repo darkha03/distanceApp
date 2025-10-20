@@ -49,10 +49,9 @@ function StatusSyncer() {
         });
         if (!res.ok) return;
         const data = await res.json();
-        const latest = data?.partner?.activityImages?.at(-1);
-        if (latest?.url) {
-          await syncPartnerWidgetImage(latest.url, { returnContentUri: true }).catch(() => {});
-        }
+        const latest = data?.partner?.activityImageUrl;
+        await syncPartnerWidgetImage(latest, { returnContentUri: true }).catch(() => {});
+        
       } catch {}
     };
 
