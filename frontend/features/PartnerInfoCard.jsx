@@ -5,7 +5,7 @@ import { AppText } from "@/components/AppText";
 import { Ionicons } from "@expo/vector-icons";
 import { AuthContext } from "@/utils/authContext";
 import { Colors } from "@/constants/Colors";
-import { weatherCodeIconMap } from "@/utils/weatherCodes";
+import { weatherCodeIconMap, getWeatherIconName } from "@/utils/weatherCodes";
 import { statusImageMap } from "@/utils/statusImage";
 import { WidgetControl } from "@/utils/widgetBridge";
 
@@ -110,6 +110,20 @@ export function PartnerInfoCard() {
     const diff = Math.floor((now.getTime() - start.getTime()) / 86400000);
     return diff >= 0 ? diff : 0;
   }, [user.anniversary]);
+
+  const isNight = useMemo(() => {
+    if (weather?.is_day === 0) return true;
+    if (weather?.is_day === 1) return false;
+    try {
+      const hour = Number(
+        new Intl.DateTimeFormat("en-US", { hour: "2-digit", hour12: false, timeZone: partnerTz })
+          .format(new Date())
+      );
+      return hour >= 20 || hour < 6; // 7pm–6am considered night
+    } catch {
+      return false;
+    }
+  }, [weather?.is_day, partnerTz]);
 
     const getImageAge = (createdAt) => {
     if (!createdAt) return "";
@@ -227,7 +241,7 @@ export function PartnerInfoCard() {
         <View style={styles.metricsRow}>
           <View style={styles.weatherBox}>
             <Ionicons
-              name={weatherCodeIconMap[weather?.weathercode] || "help-circle-outline"}
+              name={getWeatherIconName(weather?.weathercode, isNight) || "help-circle-outline"}
               size={56}
               color="#c9a4f7"
               style={styles.weatherIconBox}
