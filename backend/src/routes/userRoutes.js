@@ -14,7 +14,9 @@ import {
   uploadAvatar,
   uploadActivityImages,
   getActiveActivityImages,
-  setStatusImageSet
+  setStatusImageSet,
+  saveNotificationToken,
+  clearNotificationToken,
 } from "../controllers/userController.js";
 import { authMiddleware } from "../middleware/authMiddleware.js";
 
@@ -52,25 +54,24 @@ router.get(
 router.put("/anniversary", updateAnniversary);
 
 router.post("/add-partner", addPartner);
-
 router.get("/add-partner", getInvite);
 
 router.post("/respond-invite", respondInvite);
-
 router.get("/respond-invite", getResponseInvite);
 
 router.post("/password", changePassword);
 
 router.put("/status", updateUserStatus);
 
+router.post("/notification-token", saveNotificationToken);
+router.delete("/notification-token", clearNotificationToken);
+
 router.put("/:id/status-image-set", setStatusImageSet);
 
 
 // Get user by ID
 router.get("/:id", getUserProfile);
-
 router.put("/:id", updateUserProfile);
-
 router.delete("/:id", deleteUserProfile);
 
 export default router;

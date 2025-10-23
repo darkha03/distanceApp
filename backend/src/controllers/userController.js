@@ -2,6 +2,9 @@ import { PrismaClient } from "../generated/prisma/client.js";
 import { getIO } from "../utils/socket.js";
 import { hashPassword } from "../utils/hash.js";
 import cloudinary, { uploadBuffer } from "../utils/cloudinary.js";
+import { notifyPartner } from "../utils/notifyPartner.js";
+import { sendPushNotification } from "../utils/sendNotification.js";
+import e from "cors";
 
 const prisma = new PrismaClient();
 const EXPIRY_MS = 24 * 60 * 60 * 1000; // 24 hours
@@ -179,6 +182,7 @@ export async function deleteUserProfile(req, res) {
 // ADD PARTNER (SEND INVITE)
 // Return message
 // Emit socket event to the partner with invite details (e.g., fromUserId, fromUserName)
+// Push notification
 export async function addPartner(req, res) {
     try {
 
@@ -219,6 +223,13 @@ export async function addPartner(req, res) {
           status: invite.status
         });
         res.json({ message: "Partner invite sent" });
+        // Push notification
+        sendPushNotification(
+          partner.notificationToken,
+          "You got a new invite",
+          `${user.username} has sent you an invite`,
+          { type: "invite", fromUserId: user.id, fromUserName: user.username }
+        );
     }
     catch (error){
         console.error(error);
@@ -273,6 +284,7 @@ export async function respondInvite(req, res) {
                 status: "pending",
             },
             orderBy: { createdAt: "desc" },
+            include: { sender: true }  // include sender info for notification
         });
         //console.log("Responding to invite:", invite);
         if (!invite) {
@@ -297,7 +309,13 @@ export async function respondInvite(req, res) {
 
             const io = getIO();
             io.to(invite.senderId).emit("partner:accepted", senderPartnerInfo);
-
+            // Push notification
+            sendPushNotification(
+                invite.sender.notificationToken,
+                "Your invite was accepted",
+                `${user.username} has accepted your invite`,
+                { type: "inviteResponse", fromUserId: user.id, fromUserName: user.username, status: "accepted" }
+            );
             return res.json({
                 message: "Invite accepted",
                 user: receiverView,              // updated receiver (caller)
@@ -313,6 +331,12 @@ export async function respondInvite(req, res) {
             // Emit socket event to the inviter
             const io = getIO();
             io.to(invite.senderId).emit("partner:rejected");
+            sendPushNotification(
+                invite.sender.notificationToken,
+                "Your invite was rejected",
+                `${user.username} has rejected your invite`,
+                { type: "inviteResponse", fromUserId: user.id, fromUserName: user.username, status: "rejected" }
+            );
             return res.json({ message: "Invite rejected" });
         }
     } catch (error) {
@@ -365,6 +389,7 @@ export async function changePassword(req, res) {
 // UPDATE USER STATUS
 // Return updated user with partner info
 // Emit socket event to the partner with the new status
+// Send notification to partner if offline
 export async function updateUserStatus(req, res) {
     try {
         const userId = req.user.userId;
@@ -391,11 +416,18 @@ export async function updateUserStatus(req, res) {
             }
             },
         });
-        // Notify partner via WebSocket
+        // Notify partner via WebSocket and push notification
         const user = await prisma.user.findUnique({ where: { id: userId } });
         if (user.partnerId) {
-            const io = getIO();
-            io.to(user.partnerId).emit("partner:status", { partnerId: userId, status });
+          await notifyPartner(
+              user.partnerId,
+              "partner:status",
+              { partnerId: userId, status },
+              () => ({ 
+                body: `${user.name || user.username} updated their status to ${status}`,
+                data: { type: "status", status } 
+              })
+          );
         }
         res.json(updatedUser);
     } catch (error) {
@@ -524,6 +556,15 @@ export async function uploadActivityImages(req, res) {
         })
       )
     );
+    
+    // Set the user's activityImageUrl to the first URL in this batch
+    const firstUrl = created[0]?.url;
+    if (firstUrl) {
+      await prisma.user.update({
+        where: { id: userId },
+        data: { activityImageUrl: firstUrl }
+      });
+    }
 
     const partnerInfo = await prisma.user.findUnique({
       where: { id: userId },
@@ -531,16 +572,31 @@ export async function uploadActivityImages(req, res) {
     });
 
     if (partnerInfo?.partnerId) {
-      const io = getIO();
-      io.to(partnerInfo.partnerId).emit("partner:activityImages", {
-        userId,
-        images: created.map(c => ({
-          id: c.id,
-          url: c.url,
-          createdAt: c.createdAt
-        }))
-      });
+      // Notify partner via WebSocket and push notification
+      await notifyPartner(
+        partnerInfo.partnerId,
+        "partner:activityImages",
+        {
+          userId,
+          images: created.map(c => ({
+            id: c.id,
+            url: c.url,
+            createdAt: c.createdAt
+          }))
+        },
+        () => ({ 
+          body: `${created.length} new activity image${created.length > 1 ? "s" : ""} from your partner`,
+          data: { 
+            type: "activityImages", 
+            count: created.length,
+            userId,
+            imageIds: created.map(c => c.id)
+          } 
+        })
+      );
     }
+
+
 
     res.json({
       uploaded: created.map(c => ({
@@ -622,5 +678,39 @@ export async function setStatusImageSet(req, res) {
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: "Update failed" });
+  }
+}
+
+// SAVE NOTIFICATION TOKEN
+// Save the Expo push notification token for the user
+// Return message
+export async function saveNotificationToken(req, res) {
+  try {
+    const userId = req.user.userId;
+    const { notificationToken } = req.body;
+    console.log("Saving notification token for user", userId, notificationToken);
+    if (!notificationToken) {
+      return res.status(400).json({ error: "No token provided" });
+    }
+    await prisma.user.update({
+      where: { id: userId },
+      data: { notificationToken: notificationToken }
+    });
+    res.json({ message: "Notification token saved" });
+  } catch (error) {
+    res.status(500).json({ error: "Something went wrong" });
+  }
+}
+
+export async function clearNotificationToken(req, res) {
+  try {
+    const userId = req.user.userId;
+    await prisma.user.update({
+      where: { id: userId },
+      data: { notificationToken: null }
+    });
+    res.json({ message: "Notification token cleared" });
+  } catch (error) {
+    res.status(500).json({ error: "Something went wrong" });
   }
 }

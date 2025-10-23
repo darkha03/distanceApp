@@ -5,8 +5,9 @@ import { AppText } from "@/components/AppText";
 import { Ionicons } from "@expo/vector-icons";
 import { AuthContext } from "@/utils/authContext";
 import { Colors } from "@/constants/Colors";
-import { weatherCodeIconMap } from "@/utils/weatherCodes";
+import { weatherCodeIconMap, getWeatherIconName } from "@/utils/weatherCodes";
 import { statusImageMap } from "@/utils/statusImage";
+import { WidgetControl } from "@/utils/widgetBridge";
 
 const IMAGE_SIZE = 120;
 
@@ -26,10 +27,17 @@ export function PartnerInfoCard() {
   const [fullScreenVisible, setFullScreenVisible] = useState(false);
   const [fullScreenIndex, setFullScreenIndex] = useState(0);
   const [showActivityImages, setShowActivityImages] = useState(true);
-  // Use partner.activityImages (array of {id, url, createdAt})
   const activityImages = partner.activityImages || [];
   const [currentIndex, setCurrentIndex] = useState(0);
   const imageSet = partner.statusImageSet || "default";
+
+  useEffect(() => {
+    if (!partner) return;
+    //Keep widget in sync
+    WidgetControl.updatePartnerStatus(partner.status || "Unknown");
+    WidgetControl.updatePartnerTimezone(partner.timezone || "UTC");
+    WidgetControl.updatePartnerImageSet(partner.statusImageSet || "default");
+  }, [partner]);
 
   useEffect(() => {
     const update = () => {
@@ -103,6 +111,20 @@ export function PartnerInfoCard() {
     return diff >= 0 ? diff : 0;
   }, [user.anniversary]);
 
+  const isNight = useMemo(() => {
+    if (weather?.is_day === 0) return true;
+    if (weather?.is_day === 1) return false;
+    try {
+      const hour = Number(
+        new Intl.DateTimeFormat("en-US", { hour: "2-digit", hour12: false, timeZone: partnerTz })
+          .format(new Date())
+      );
+      return hour >= 20 || hour < 6; // 7pm–6am considered night
+    } catch {
+      return false;
+    }
+  }, [weather?.is_day, partnerTz]);
+
     const getImageAge = (createdAt) => {
     if (!createdAt) return "";
     const now = Date.now();
@@ -153,6 +175,7 @@ export function PartnerInfoCard() {
           data={activityImages}
           keyExtractor={item => item.id}
           showsHorizontalScrollIndicator={false}
+          
           onMomentumScrollEnd={e => {
             const index = Math.round(e.nativeEvent.contentOffset.x / IMAGE_SIZE);
             setCurrentIndex(Math.min(index, activityImages.length - 1));
@@ -174,7 +197,7 @@ export function PartnerInfoCard() {
               />
             </TouchableOpacity>
           )}
-          style={{ maxWidth: IMAGE_SIZE * 1.2 }}
+          style={{ maxWidth: IMAGE_SIZE * 1.05, maxHeight: IMAGE_SIZE }}
         />
         <View style={styles.dotsRow}>
           {activityImages.map((_, i) => (
@@ -218,7 +241,7 @@ export function PartnerInfoCard() {
         <View style={styles.metricsRow}>
           <View style={styles.weatherBox}>
             <Ionicons
-              name={weatherCodeIconMap[weather?.weathercode] || "help-circle-outline"}
+              name={getWeatherIconName(weather?.weathercode, isNight) || "help-circle-outline"}
               size={56}
               color="#c9a4f7"
               style={styles.weatherIconBox}

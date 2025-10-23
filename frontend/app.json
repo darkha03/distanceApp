@@ -22,6 +22,7 @@
       },
       "edgeToEdgeEnabled": true,
       "softwareKeyboardLayoutMode": "resize",
+      "googleServicesFile": "./google-services.json",
       "package": "com.steve.distancelove",
       "versionCode": 1
     },
@@ -40,7 +41,8 @@
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
         }
-      ]
+      ],
+      "expo-secure-store"
     ],
     "experiments": {
       "typedRoutes": true

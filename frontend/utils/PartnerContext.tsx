@@ -1,8 +1,10 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { useAuthStore } from "@/store/authStore";
+import { useAuthStore } from "@/utils/authStore";
 import { AuthContext } from "./authContext";
 import { SocketContext } from "./SocketContext";
 import type {ActivityImage} from "./authContext";
+import { WidgetControl } from "./widgetBridge";
+import { syncPartnerWidgetImage } from "./updateWidgetImage";
 
 export interface PartnerData {
   id: string;
@@ -10,6 +12,7 @@ export interface PartnerData {
   name?: string;
   status?: string;
   location?: string;
+  timezone?: string;
   birthday?: Date;
   anniversary?: Date;
   activityImageUrl?: string;
@@ -165,6 +168,10 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
     socket.on("partner:status", ({ partnerId, status }) => {
       patchPartner({ id: partnerId, status });
+      // Also update widget if partner status changes
+      WidgetControl.updatePartnerStatus(status).catch((err) => {
+        console.error("Failed to update partner status on widget:", err);
+      });
     });
 
     socket.on("partner:activityImages", ({ userId, images }) => {
@@ -178,6 +185,13 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
         const mergedImages = Array.from(map.values()).sort(
           (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
         );
+        // Update widget with latest image if changed
+        const latestImage = mergedImages[mergedImages.length - 1];
+        if (latestImage && latestImage.url !== prevImages[prevImages.length - 1]?.url) {
+          syncPartnerWidgetImage(latestImage.url, { returnContentUri: true }).catch((err) => {
+            console.error("Failed to sync partner widget image:", err);
+          });
+        }
         return { id: userId, activityImages: mergedImages };
       });
     });
@@ -194,6 +208,16 @@ export const PartnerProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
     socket.on("partner:update", (partnerData) => {
       patchPartner(partnerData);
+      if (partnerData.timezone) {
+        WidgetControl.updatePartnerTimezone(partnerData.timezone).catch((err) => {
+          console.error("Failed to update partner timezone on widget:", err);
+        });
+      }
+      if (partnerData.statusImageSet) {
+        WidgetControl.updatePartnerImageSet(partnerData.statusImageSet).catch((err) => {
+          console.error("Failed to update partner image set on widget:", err);
+        });
+      }
     });
 
     socket.on("partner:anniversary", ({userId, anniversary }) => {

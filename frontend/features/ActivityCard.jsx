@@ -1,15 +1,16 @@
-import React, { useState, useContext } from "react";
+import React, { useState, useContext, useEffect } from "react";
 import { View, TouchableOpacity, StyleSheet, Image, FlatList } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "@/constants/Colors";
 import { AppCard } from "@/components/AppCard";
 import { AppText } from "@/components/AppText";
 import { AppInput } from "@/components/AppInput";
-import { useAuthStore } from "@/store/authStore";
+import { useAuthStore } from "@/utils/authStore";
 import { AuthContext } from "@/utils/authContext";
 import * as ImagePicker from 'expo-image-picker';
 import { statusImageMap } from "@/utils/statusImage";
 import * as ImageManipulator from 'expo-image-manipulator';
+import { WidgetControl } from "@/utils/widgetBridge";
 
 export const ActivityCard = () => {
   const { token } = useAuthStore();
@@ -39,6 +40,9 @@ export const ActivityCard = () => {
       // For now, we just update the local state
     }
   };*/}
+  useEffect(() => {
+    setSelectedActivity(user.status || "sleep");
+  }, [user.status]);
 
   const resizeImage = async (uri) => {
     try {
@@ -185,6 +189,15 @@ export const ActivityCard = () => {
       }
       const data = await res.json();
       setUser({ ...user, status: data.status });
+      // Update widget as well
+      WidgetControl.updateStatus(data.status).catch((err) => {
+        console.error("Failed to update user status on widget:", err);
+      });
+      if(!user.partner){
+        WidgetControl.updatePartnerStatus(data.status).catch((err) => {
+          console.error("Failed to update partner status on widget:", err);
+        });
+      }
     }
     catch (error) {
       console.error("Error updating activity:", error);
