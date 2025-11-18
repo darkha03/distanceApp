@@ -51,3 +51,18 @@ my-app/
 - Weather & timezone display per partner.
 - Automated cleanup (DB + Cloudinary) hourly.
 - Notification on update
+
+## Screenshot
+
+#### Main Screen
+![Main Screen](docs/mainscreen.png)
+#### Profile Screen
+![Profile Screen](docs/profilescreen.png)
+#### Account Setting
+![Account Setting](docs/account-setting.png)
+#### Profile Setting
+![Profile Setting](docs/profile-setting.png)
+#### Partner Setting
+![Partner Setting](docs/partner-setting.png)
+#### Android Widget
+![Android Widget](docs/widget.png)

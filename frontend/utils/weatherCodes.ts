@@ -4,7 +4,7 @@ export function getWeatherIconName(weatherCode: number, isNight: boolean): strin
     if (weatherCode === 0) {
       return "moon-outline"; // Clear sky at night
     } else if (weatherCode === 1) {
-      return "partly-moon-outline"; // Mainly clear at night
+      return "moon-outline"; // Mainly clear at night
     }
   }
   return weatherCodeIconMap[weatherCode] || "help-circle-outline";
